@@ -23,7 +23,8 @@ object Replace extends ExplosionType{
     val dropItems: Boolean = cReplacers.getBoolean("drop-items")
     for (block <- blocks) {
       if ((depth <= 0 || loc.getY - depth < block.getY) && block.getY <= loc.getY)
-        setBlockType(block, material, dropItems, originName=originName)
+        if (block.getType != Material.AIR)
+          setBlockType(block, material, dropItems, originName=originName)
     }
     true
   }

@@ -3,21 +3,22 @@ package events.bukkit
 
 import Main.{cooldown, decimalFormat}
 import utils.Blocks.canDestroyThatBlock
-import utils.Conf.{cConfig, grenades}
-import utils.Grenade
+import utils.Conf.*
+import utils.lang.Message.sendMessage
+import utils.{Conf, Grenade}
 
+import com.typesafe.config.{Config, ConfigValueFactory}
 import de.tr7zw.changeme.nbtapi.NBTItem
-import dev.turtle.grenades.utils.lang.Message.sendMessage
 import net.md_5.bungee.api.ChatMessageType
-import net.md_5.bungee.api.chat.TextComponent
 import org.bukkit.block.Block
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
-import org.bukkit.event.{EventHandler, EventPriority, Listener}
-import org.bukkit.event.block.BlockBreakEvent
 import org.bukkit.event.player.PlayerInteractEvent
+import org.bukkit.event.{EventHandler, EventPriority, Listener}
 import org.bukkit.inventory.ItemStack
-import org.bukkit.{Bukkit, GameMode, Material}
+import org.bukkit.{Location, Material}
+
+import scala.jdk.CollectionConverters.*
 
 class InteractEvent extends Listener{
 
@@ -54,18 +55,29 @@ class InteractEvent extends Listener{
     }
     cooldown.put(p.getName, timeNow)
     val grenade: Grenade = grenades(grenade_id)
+    var success: Boolean = true
     if (grenade.isLandmine) {
       val block: Block = e.getClickedBlock
-      if (
-        block.getType.equals(Material.AIR) ||
+      if (block == null ||
+          block.getType.equals(Material.AIR) ||
           !canDestroyThatBlock(p, block) ||
           !cConfig.getBoolean("landmine.enabled")
       ) return
-      //TODO: Add landmines
-
+      val worldName: String = block.getWorld.getName
+      val loc: Location = e.getClickedBlock.getLocation
+      val landmineCoords = s"${loc.getChunk.getX}/${loc.getChunk.getZ}.${loc.getX.toInt}/${loc.getY.toInt}/${loc.getZ.toInt}"
+      if (!landmines.hasPath(worldName))
+        landmines = landmines.withValue(worldName, ConfigValueFactory.fromMap(Map().asJava))
+      var worldConf: Config = landmines.getConfig(worldName)
+      worldConf = Conf.setValue(worldConf, s"$landmineCoords.owner", p.getName)
+      worldConf = Conf.setValue(worldConf, s"$landmineCoords.grenade_id", grenade_id)
+      Conf.save(worldConf, s"${getFolder("landmines")}/${worldName}.json")
+      reloadLandmines()
+      block.setType(Material.OAK_PRESSURE_PLATE)
     } else {
-      grenade.spawn(p.getLocation, p.getLocation.getDirection, owner = p)
+      success = grenade.spawn(p.getLocation, p.getLocation.getDirection, owner = p)
     }
-    itemInHand.setAmount(itemInHand.getAmount - 1)
+    if (success)
+      itemInHand.setAmount(itemInHand.getAmount - 1)
   }
 }

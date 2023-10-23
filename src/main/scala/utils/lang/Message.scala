@@ -1,7 +1,9 @@
 package dev.turtle.grenades
 package utils.lang
 
-import dev.turtle.grenades.utils.Conf.{cConfig, cLang}
+import Main.debugMode
+import utils.Conf.{cConfig, cLang}
+
 import net.md_5.bungee.api.ChatMessageType
 import net.md_5.bungee.api.chat.TextComponent
 import org.bukkit.ChatColor
@@ -36,6 +38,11 @@ object Message {
     s match
       case player: Player => player.spigot().sendMessage(chatMessageType, new TextComponent(translatedText))
       case _ => s.sendMessage(translatedText)
+    true
+  }
+  def debugMessage(s: CommandSender, path: String, placeholders: immutable.Map[String, String], chatMessageType: ChatMessageType=ChatMessageType.CHAT): Boolean = {
+    if (debugMode)
+      sendMessage(s, path, placeholders, chatMessageType)
     true
   }
 }

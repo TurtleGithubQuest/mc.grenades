@@ -1,23 +1,22 @@
 package dev.turtle.grenades
 
+import Main.*
+import command.base.CMD
+import events.bukkit.{InteractEvent, LandmineEvents}
+import utils.Conf
 import utils.Conf.*
-import Main.{coreprotectapi, debugMode, decimalFormat, plugin, random}
+import utils.lang.Message.debugMessage
 
+import com.sk89q.worldedit.bukkit.WorldEditPlugin
 import de.tr7zw.changeme.nbtapi.NBTItem
-
-import dev.turtle.grenades.command.base.CMD
-import dev.turtle.grenades.events.bukkit.InteractEvent
-import dev.turtle.grenades.utils.Conf
-import net.coreprotect.{CoreProtect, CoreProtectAPI}
-import org.bukkit.NamespacedKey
+import net.coreprotect.CoreProtectAPI
+import org.bukkit.Bukkit
 import org.bukkit.entity.Player
-import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
 
 import java.text.DecimalFormat
-import scala.collection.mutable
 import scala.collection.mutable.Map
-import scala.jdk.CollectionConverters.*
+import scala.collection.{immutable, mutable}
 import scala.util.Random
 
 object Main {
@@ -25,10 +24,11 @@ object Main {
   var pluginPrefix = "Grenade"
   var pluginSep = ":"
   var plugin: JavaPlugin = _
-  var owedItems: mutable.Map[Player, NBTItem] = mutable.Map() //Map[Player, NBTItem] = null
+  var owedItems: mutable.Map[Player, NBTItem] = mutable.Map()
   var cooldown: mutable.Map[String, Long] = mutable.Map().withDefault(k => (System.currentTimeMillis))
   var random: Random = _
   var coreprotectapi: CoreProtectAPI = null
+  var faweapi: WorldEditPlugin = null
   var decimalFormat = new DecimalFormat("##0.#")
 }
 
@@ -40,30 +40,27 @@ class Main extends JavaPlugin {
     Conf.reload()
     getCommand("grenade").setExecutor(CMD)
     this.getServer.getPluginManager.registerEvents(new InteractEvent, this)
-    var recipecount = 0
-    var i = 0
-   /* if (Core.cfg.getBoolean("landmine.enabled")) {
-      if (Core.cfg.getBoolean("landmine.hiding")) landmineHiderCaretaker
-      this.getServer.getPluginManager.registerEvents(new Nothing, this)
-    }*/
-    hookCoreProtect
+    if (cConfig.getBoolean("landmine.enabled"))
+      this.getServer.getPluginManager.registerEvents(new LandmineEvents, this)
+    hookPlugins
   }
 
   override def onDisable(): Unit = {
     var recipecount = 0
     var i = 0
   }
-
-  private def hookCoreProtect: Unit = {
-    val plugin = getServer.getPluginManager.getPlugin("CoreProtect")
-    // Check that CoreProtect is loaded
-    if (plugin == null || !plugin.isInstanceOf[CoreProtectAPI]) {return}
-    // Check that the API is enabled
-    val CoreProtect: CoreProtectAPI = plugin.asInstanceOf[CoreProtectAPI]
-    if (!CoreProtect.isEnabled) {return}
-    // Check that a compatible version of the API is loaded
-    if (CoreProtect.APIVersion < 9 || !Conf.cConfig.getBoolean("hooks.coreprotect")) {return}
-    //log("Hooked into CoreProtect")
-    coreprotectapi = CoreProtect
+  private def hookPlugins: Unit = {
+    for (pluginName <- Array("CoreProtect", "FastAsyncWorldEdit")) {
+      val plugin = getServer.getPluginManager.getPlugin(pluginName)
+      if (plugin != null && plugin.isEnabled) {
+        if (Conf.cConfig.getBoolean(s"hooks.${pluginName.toLowerCase}"))
+          pluginName match
+            case "CoreProtect" =>
+              coreprotectapi = plugin.asInstanceOf[CoreProtectAPI]
+            case "FastAsyncWorldEdit" =>
+              faweapi = plugin.asInstanceOf[WorldEditPlugin]
+          debugMessage(Bukkit.getConsoleSender, s"$pluginPrefix$pluginSep &eshook hands with $pluginName.", immutable.Map())
+      }
+    }
   }
 }

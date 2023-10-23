@@ -2,18 +2,20 @@ package dev.turtle.grenades
 package utils
 
 import Main.*
-import com.typesafe.config.{Config, ConfigFactory}
+
+import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions, ConfigValueFactory}
 import Conf.*
 import dev.turtle.explosions.Prototype
 import dev.turtle.grenades.utils
 import utils.parts.{Explosion, ExplosionType, gParticle, gSound}
+
 import dev.turtle.grenades.explosions.{AntiMatter, Classic, Replace}
-import dev.turtle.grenades.utils.lang.Message.clientLang
-import org.bukkit.Bukkit
+import dev.turtle.grenades.utils.lang.Message.{clientLang, debugMessage}
+import org.bukkit.{Bukkit, ChatColor}
 import org.bukkit.Bukkit.getLogger
 
 import java.awt.Color
-import java.io.{File, IOException, InputStream}
+import java.io.{BufferedWriter, File, FileWriter, IOException, InputStream}
 import java.nio.file.{Files, StandardCopyOption}
 import java.text.DecimalFormat
 import java.util
@@ -29,6 +31,7 @@ object Conf {
   var cConfig: Config = ConfigFactory.empty()
   var cLang: Config = ConfigFactory.empty()
   var cRecipes: Config = ConfigFactory.empty() //TODO: Reimplement this
+  var landmines: Config = ConfigFactory.empty()
 
   var grenades: mutable.Map[String, Grenade] = mutable.Map()
   var explosionTypes: mutable.Map[String, ExplosionType] = mutable.Map(
@@ -82,7 +85,20 @@ object Conf {
         ConfigFactory.parseFile(configFile)
       }
     }
-
+    def reloadLandmines(): Boolean = {
+      val landmineFolder = new File(getFolder("landmines"))
+      val landmineFiles = landmineFolder.listFiles()
+      if (landmineFiles != null) {
+        for (landmineFile <- landmineFiles) {
+          if (landmineFile.getName.endsWith(".json") && landmineFile.length() > 1) {
+            val fileConfig = ConfigFactory.parseFile(landmineFile)
+            val updatedFileConfig = fileConfig.withValue(landmineFile.getName.split("\\.")(0), fileConfig.root())
+            landmines = landmines.withFallback(updatedFileConfig).resolve()
+          }
+        }
+      }
+      true
+    }
     def reloadGrenades(): Boolean = {
       val grenadeTypesFolder = new File(getFolder("grenades"))
       val grenadeTypesFiles = grenadeTypesFolder.listFiles()
@@ -118,7 +134,7 @@ object Conf {
         grenades.put(keyName,
           new Grenade(
             id = keyName,
-            displayName = getGrenadeInfo("display-name"),
+            displayName = getGrenadeInfo("item.display-name"),
             lore = getLore(keyName),
             explosion = new Explosion(
               name = explosionTypes(getExplosionInfo("name").toUpperCase),
@@ -148,17 +164,34 @@ object Conf {
               color = org.bukkit.Color.fromRGB(decodedColor.getRed, decodedColor.getGreen, decodedColor.getBlue),
               colorFade = org.bukkit.Color.fromRGB(decodedColor.getRed, decodedColor.getGreen, decodedColor.getBlue)
             ),
-            material = org.bukkit.Material.valueOf(getGrenadeInfo("material").toUpperCase),
-            glow = getGrenadeInfo("glow").toBoolean,
-            model = getGrenadeInfo("model").toUpperCase,
-            countdownVisible = getGrenadeInfo("countdown.visible").toBoolean,
-            countdownTime = getGrenadeInfo("countdown.time").toInt,
-            velocity = getGrenadeInfo("velocity").toDouble
+            material = org.bukkit.Material.valueOf(getGrenadeInfo("item.material").toUpperCase),
+            glow = getGrenadeInfo("entity.glow").toBoolean,
+            model = getGrenadeInfo("entity.model").toUpperCase,
+            customNameVisible = getGrenadeInfo("entity.custom-name.visible").toBoolean,
+            customName = ChatColor.translateAlternateColorCodes('&',
+                        getGrenadeInfo("entity.custom-name.value")),
+            fuseTime = getGrenadeInfo("entity.fuse").toInt,
+            velocity = getGrenadeInfo("entity.velocity").toDouble
         ))
       }
       true
     }
-
+    def save(config: Config, path: String=""): Boolean = {
+      val file = new File(path)
+      try {
+        val writer = new BufferedWriter(new FileWriter(file))
+        writer.write(config.root().render(ConfigRenderOptions.concise()))
+        writer.close()
+      } catch {
+        case e: Exception =>
+          debugMessage(Bukkit.getConsoleSender, s"&cError saving '${file.getName}' to path: ${e.getMessage}", Map())
+          return false
+      }
+      true
+    }
+    def setValue(config: Config, path: String, value: String): Config = {
+      config.withValue(path, ConfigValueFactory.fromAnyRef(value))
+    }
     def reload(): Boolean = {
       cConfig = this.get("config").withFallback(this.get("config", true))
       cLang = this.get("lang").withFallback(this.get("lang", true))
@@ -170,6 +203,7 @@ object Conf {
       pluginPrefix = cConfig.getString("general.plugin.name")
       pluginSep = cConfig.getString("general.plugin.sep")
       reloadGrenades()
+      reloadLandmines()
       true
     }
     def getLore(grenadeName: String): java.util.ArrayList[String] = {
@@ -179,7 +213,7 @@ object Conf {
         "particles" -> cParticles
       )
 
-      var lore: JavaList[String] = cfg("grenade").getStringList("lore")
+      var lore: JavaList[String] = cfg("grenade").getStringList("item.lore")
       if (lore.isEmpty) {
         val placeholderRegex = "%(.*?)%".r
         lore = cLang.getStringList("item.grenade.lore").asScala.map { word =>
@@ -202,7 +236,6 @@ object Conf {
         }.asJava
       }
       lore = lore.asScala.map(_.replaceAll("&", "§")).asJava
-      //new java.util.ArrayList[String](loreList.asJava)
       java.util.ArrayList(lore)
     }
 }

@@ -32,8 +32,9 @@ trait T_Grenade {
   //def armorStand: ArmorStand
   def glow: Boolean
   def model: String
-  def countdownVisible: Boolean
-  def countdownTime: Integer
+  def customNameVisible: Boolean
+  def customName: String
+  def fuseTime: Integer
   def velocity: Double
 }
 class Grenade(
@@ -46,8 +47,9 @@ class Grenade(
              val material: Material,
              val glow: Boolean,
              val model: String,
-             val countdownVisible: Boolean,
-             val countdownTime: Integer,
+             val customNameVisible: Boolean,
+             val customName: String,
+             val fuseTime: Integer,
              val velocity: Double
              ) extends T_Grenade {
 
@@ -65,8 +67,8 @@ class Grenade(
       }
 
       def spawn(loc: Location, direction: org.bukkit.util.Vector, owner: Player = null): Boolean = {
-        new GrenadeEntity(this, owner).spawn(loc, direction)
-        true
+        val grenadeEntity = new GrenadeEntity(this, owner)
+        grenadeEntity.spawn(loc, direction)
       }
 
       def item: ItemStack = {
