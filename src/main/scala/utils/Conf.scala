@@ -1,10 +1,10 @@
 package dev.turtle.grenades
-
 package utils
 
 import Main.*
 import com.typesafe.config.{Config, ConfigFactory}
 import Conf.*
+import dev.turtle.explosions.Prototype
 import dev.turtle.grenades.utils
 import utils.parts.{Explosion, ExplosionType, gParticle, gSound}
 import dev.turtle.grenades.explosions.{AntiMatter, Classic, Replace}
@@ -34,7 +34,8 @@ object Conf {
   var explosionTypes: mutable.Map[String, ExplosionType] = mutable.Map(
     "ANTIMATTER" -> AntiMatter,
     "REPLACE" -> Replace,
-    "CLASSIC" -> Classic
+    "CLASSIC" -> Classic,
+    "PROTOTYPE" -> Prototype
   ).withDefault(k => Classic)
 
     def getFolder(path: String = ""): String = {

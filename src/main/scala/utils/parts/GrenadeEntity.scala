@@ -81,10 +81,10 @@ class GrenadeEntity(val grenade: Grenade,
       else "unknown"
     }
     gModelLocation.getWorld.playSound(gModelLocation, grenade.explosion.sound.name, grenade.explosion.sound.volume, grenade.explosion.sound.pitch)
-    grenade.explosion.name.detonate(gModelLocation, blocks, originName=originName, params=grenade.explosion.extra)
-    plugin.getServer.getPluginManager.callEvent(
-      new EntityExplodeEvent(gModel, gModelLocation, blocks.toList.asJava, grenade.explosion.power.toFloat)
-    )
+    val entityExplodeEvent = new EntityExplodeEvent(gModel, gModelLocation, blocks.toList.asJava, grenade.explosion.power.toFloat)
+    plugin.getServer.getPluginManager.callEvent(entityExplodeEvent)
+    if (!entityExplodeEvent.isCancelled)
+      grenade.explosion.name.detonate(gModelLocation, blocks, originName=originName, params=grenade.explosion.extra)
     true
   }
   private object countdown {
