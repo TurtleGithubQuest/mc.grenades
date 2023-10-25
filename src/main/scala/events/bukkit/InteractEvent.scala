@@ -72,7 +72,7 @@ class InteractEvent extends Listener{
       worldConf = Conf.setValue(worldConf, s"$landmineCoords.owner", p.getName)
       worldConf = Conf.setValue(worldConf, s"$landmineCoords.grenade_id", grenade_id)
       Conf.save(worldConf, s"${getFolder("landmines")}/${worldName}.json")
-      reloadLandmines()
+      reloadConfigsInFolder(folderPath="landmines")
       block.setType(Material.OAK_PRESSURE_PLATE)
     } else {
       success = grenade.spawn(p.getLocation, p.getLocation.getDirection, owner = p)

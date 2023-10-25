@@ -9,7 +9,7 @@ import dev.turtle.grenades.Main.debugMode
 import dev.turtle.grenades.command.Help
 import dev.turtle.grenades.utils.Permissions
 import dev.turtle.grenades.utils.Permissions.cCommands
-import dev.turtle.grenades.utils.lang.Message.sendMessage
+import dev.turtle.grenades.utils.lang.Message.{debugMessage, sendMessage}
 import org.bukkit.Bukkit.{getConsoleSender, getLogger}
 import org.bukkit.command.{Command, CommandSender, TabExecutor}
 
@@ -34,7 +34,8 @@ object CMD extends TabExecutor {
   val commandsClass: mutable.Map[String, CMD] = mutable.Map(
     "help" -> command.Help,
     "give" -> command.Give,
-    "reload" -> command.Reload
+    "reload" -> command.Reload,
+    "lang" -> command.Lang
   )
 
   def reload(): Unit = {
@@ -68,20 +69,14 @@ object CMD extends TabExecutor {
       val arg0: String = args(0).toLowerCase
       if (commands.contains(arg0)){
         val o_cmd: CMD = commands(arg0)
-        val permission: String = {
-          if (cCommands.getIsNull(args(0))) {
-            cCommands.getString(s"${CMD.getClass.getName.toLowerCase}.alias.$arg0.permission")
-          } else {
-            cCommands.getString(s"$arg0.permission")
-          }
-        }
+        val permission: String = Permissions.get(args(0), CMD.getClass.getName.toLowerCase)
         val hasPerm: Boolean = Permissions.has(s, permission)
         if (hasPerm) {
           val result: Boolean = o_cmd.execute(s, args)
           return result
         } else {
           sendMessage(s, "commands.no-perm", immutable.Map("command" -> args(0)))
-          if (debugMode) sendMessage(getConsoleSender, "console.notify.no-perm", immutable.Map(
+          debugMessage(getConsoleSender, "console.notify.no-perm", immutable.Map(
             "command" -> args(0),
             "sender" -> s.getName,
             "permission" -> permission

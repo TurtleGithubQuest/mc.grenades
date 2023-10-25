@@ -9,6 +9,7 @@ import utils.lang.Message.debugMessage
 
 import com.sk89q.worldedit.bukkit.WorldEditPlugin
 import de.tr7zw.changeme.nbtapi.NBTItem
+import dev.turtle.grenades.utils.optimized.OnlinePlayers
 import net.coreprotect.CoreProtectAPI
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -42,6 +43,7 @@ class Main extends JavaPlugin {
     this.getServer.getPluginManager.registerEvents(new InteractEvent, this)
     if (cConfig.getBoolean("landmine.enabled"))
       this.getServer.getPluginManager.registerEvents(new LandmineEvents, this)
+    this.getServer.getPluginManager.registerEvents(OnlinePlayers, this)
     hookPlugins
   }
 

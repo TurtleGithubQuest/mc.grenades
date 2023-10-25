@@ -14,16 +14,16 @@ import scala.collection.{immutable, mutable}
 
 object Message {
   private val cMessaging = cConfig.getConfig("general.messaging")
-  private val defaultLang = cMessaging.getString("default.lang")
+  val defaultLang = cMessaging.getString("default.lang")
   private val placeholderPrefix = cMessaging.getString("default.prefix.placeholder")
   private val textPrefix = cMessaging.getString("default.prefix.text")
-  private val placeholderRegex = "%(.*?)%".r
+  //private val placeholderRegex = "%(.*?)%".r
   var clientLang: mutable.Map[String, String] = mutable.Map().withDefault(k => defaultLang)
 
   def sendMessage(s: CommandSender, path: String, placeholders: immutable.Map[String, String], chatMessageType: ChatMessageType=ChatMessageType.CHAT): Boolean = {
     var text: String = {
       try {
-        textPrefix + cLang.getString(s"$path.${clientLang.getOrElse(s.getName, defaultLang)}")
+        textPrefix + cLang.getString(s"${clientLang(s.getName)}.$path")
       } catch {
         case _: Throwable => path
       }

@@ -1,7 +1,7 @@
 package dev.turtle.grenades
 package utils
 
-import dev.turtle.grenades.utils.Conf.{getFolder, grenades, landmines, reloadLandmines}
+import dev.turtle.grenades.utils.Conf.{getFolder, grenades, landmines, reloadConfigsInFolder}
 import org.bukkit.{Bukkit, Location}
 
 object Landmine {
@@ -23,7 +23,7 @@ object Landmine {
       if (success) {
         cWorld = Conf.setValue(cWorld, s"$landmineCoords", "")
         Conf.save(cWorld, s"${getFolder("landmines")}/${worldName}.json")
-        reloadLandmines()
+        reloadConfigsInFolder(folderPath="landmines")
       }
     }
     true

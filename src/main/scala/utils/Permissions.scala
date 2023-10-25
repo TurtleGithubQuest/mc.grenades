@@ -3,6 +3,9 @@ package utils
 
 import com.typesafe.config.Config
 import utils.Conf.cConfig
+
+import dev.turtle.grenades.utils.lang.Message.debugMessage
+import org.bukkit.Bukkit.getConsoleSender
 import org.bukkit.command.CommandSender
 
 object Permissions {
@@ -17,6 +20,17 @@ object Permissions {
           s.hasPermission(s"$permGroup")
           )
         hasPerm = true
+    if (!hasPerm)
+      debugMessage(getConsoleSender, "console.notify.no-perm", Map("sender" -> s.getName))
     hasPerm
+  }
+
+  def get(a: String, cmdClass:String, perm: String="use"): String = {
+      if (cCommands.getIsNull(a)) {
+        cCommands.getString(s"$cmdClass.alias.$a.permission.$perm")
+      } else {
+        cCommands.getString(s"$a.permission.$perm")
+      }
+
   }
 }

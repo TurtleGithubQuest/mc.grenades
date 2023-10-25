@@ -6,12 +6,13 @@ import command.base.CMD
 import dev.turtle.grenades.utils.Conf.{cGrenades, grenades}
 import dev.turtle.grenades.utils.Grenade
 import dev.turtle.grenades.utils.lang.Message.sendMessage
+import dev.turtle.grenades.utils.optimized.OnlinePlayers
 import org.bukkit.{Bukkit, Material}
 import org.bukkit.command.CommandSender
 import org.bukkit.inventory.ItemStack
 
 import scala.collection.immutable
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters._
 
 object Give extends CMD{
   override def execute(s: CommandSender, args: Array[String]): Boolean = {
@@ -52,7 +53,7 @@ object Give extends CMD{
     var suggest: Array[String] = new Array[String](0)
     argsLength match
       case 2 =>
-        suggest = Bukkit.getOnlinePlayers.asScala.map(_.getName).toArray
+        suggest = OnlinePlayers.get//Bukkit.getOnlinePlayers.asScala.map(_.getName).toArray
       case 3 =>
         suggest = grenades.keys.toArray
       case 4 =>

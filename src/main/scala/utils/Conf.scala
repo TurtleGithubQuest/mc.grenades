@@ -10,7 +10,7 @@ import dev.turtle.grenades.utils
 import utils.parts.{Explosion, ExplosionType, gParticle, gSound}
 
 import dev.turtle.grenades.explosions.{AntiMatter, Classic, Replace}
-import dev.turtle.grenades.utils.lang.Message.{clientLang, debugMessage}
+import dev.turtle.grenades.utils.lang.Message.{clientLang, debugMessage, defaultLang, sendMessage}
 import org.bukkit.{Bukkit, ChatColor}
 import org.bukkit.Bukkit.getLogger
 
@@ -49,16 +49,19 @@ object Conf {
       filePath.getPath
     }
 
-    def get(configName: String, defaultValues: Boolean = false): Config = {
+    def get(configName: String, toDefaultsFolder: Boolean = false): Config = {
       val pluginFolder = getFolder()
       var configFile = new File(s"${pluginFolder}/$configName.conf")
 
-      if (!configFile.exists() || defaultValues) { // load default config
+      if (toDefaultsFolder || !configFile.exists()) { // load default config
         val classLoader = getClass.getClassLoader
         val inputStream: InputStream = classLoader.getResourceAsStream(s"$configName.conf")
-        if (defaultValues) {
+        if (toDefaultsFolder) {
           val defaultsPath = getFolder("defaults")
           configFile = new File(s"${defaultsPath}/$configName.conf")
+          val splitConfigName = configName.split("/")
+          if (splitConfigName.length > 1)
+            getFolder(s"defaults/${splitConfigName(0)}")
         }
         if (inputStream != null) {
           try {
@@ -85,17 +88,29 @@ object Conf {
         ConfigFactory.parseFile(configFile)
       }
     }
-    def reloadLandmines(): Boolean = {
-      val landmineFolder = new File(getFolder("landmines"))
-      val landmineFiles = landmineFolder.listFiles()
-      if (landmineFiles != null) {
-        for (landmineFile <- landmineFiles) {
-          if (landmineFile.getName.endsWith(".json") && landmineFile.length() > 1) {
-            val fileConfig = ConfigFactory.parseFile(landmineFile)
-            val updatedFileConfig = fileConfig.withValue(landmineFile.getName.split("\\.")(0), fileConfig.root())
-            landmines = landmines.withFallback(updatedFileConfig).resolve()
+    def reloadConfigsInFolder(folderPath: String, fileType: String=".json"): Boolean = {
+      val folder = new File(getFolder(folderPath))
+      val files = folder.listFiles()
+      if (files != null && files.nonEmpty) {
+        for (file <- files) {
+          if (file.getName.endsWith(fileType) && file.length() > 1) {
+            val fileConfig = ConfigFactory.parseFile(file)
+            val updatedFileConfig = fileConfig.withValue(file.getName.split("\\.")(0), fileConfig.root())
+            folderPath match
+              case "landmines"  =>
+                landmines = landmines.withFallback(updatedFileConfig).resolve()
+              case "lang" =>
+                cLang = cLang.withFallback(updatedFileConfig).resolve()
+              case _ =>
+                sendMessage(Bukkit.getConsoleSender, s"&cAttempted to load unknown config: $folderPath", Map())
           }
         }
+      } else {
+        folderPath match
+          case "lang" =>
+            cLang = cLang.withValue("en_US", this.get(configName = "lang/en_US").root())
+          case _ =>
+            {}
       }
       true
     }
@@ -194,7 +209,7 @@ object Conf {
     }
     def reload(): Boolean = {
       cConfig = this.get("config").withFallback(this.get("config", true))
-      cLang = this.get("lang").withFallback(this.get("lang", true))
+      reloadConfigsInFolder(folderPath = "lang", fileType = ".conf")
       cExplosions = this.get("explosions").withFallback(this.get("explosions", true))
       cParticles = this.get("particles").withFallback(this.get("particles", true))
       cSounds = this.get("sounds").withFallback(this.get("sounds", true))
@@ -203,7 +218,7 @@ object Conf {
       pluginPrefix = cConfig.getString("general.plugin.name")
       pluginSep = cConfig.getString("general.plugin.sep")
       reloadGrenades()
-      reloadLandmines()
+      reloadConfigsInFolder(folderPath="landmines")
       true
     }
     def getLore(grenadeName: String): java.util.ArrayList[String] = {
@@ -216,7 +231,7 @@ object Conf {
       var lore: JavaList[String] = cfg("grenade").getStringList("item.lore")
       if (lore.isEmpty) {
         val placeholderRegex = "%(.*?)%".r
-        lore = cLang.getStringList("item.grenade.lore").asScala.map { word =>
+        lore = cLang.getStringList(s"$defaultLang.item.grenade.lore").asScala.map { word =>
           val replacedWord = placeholderRegex.replaceAllIn(word.toString, m => {
             val placeholder = m.group(1)
             val splitPlaceholder = placeholder.split("\\|")
