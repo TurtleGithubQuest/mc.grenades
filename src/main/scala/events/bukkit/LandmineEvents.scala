@@ -4,13 +4,14 @@ package events.bukkit
 import utils.Conf.cConfig
 import utils.{Conf, Landmine}
 
+import dev.turtle.grenades.utils.extras.ExtraListener
 import org.bukkit.block.Block
 import org.bukkit.event.block.Action
 import org.bukkit.event.entity.{EntityExplodeEvent, EntityInteractEvent}
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.{EventHandler, EventPriority, Listener}
 
-class LandmineEvents extends Listener {
+class LandmineEvents(override val configurationPath: String) extends ExtraListener(configurationPath) {
   @EventHandler(priority = EventPriority.HIGH)
   private def entityInteractEvent(e: EntityInteractEvent): Unit = {
     if (e.isCancelled) {return}
@@ -30,6 +31,4 @@ class LandmineEvents extends Listener {
       Landmine.isPresent(block.getLocation)
     })
   }
-
-
 }

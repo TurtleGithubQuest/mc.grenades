@@ -2,23 +2,21 @@ package dev.turtle.grenades
 
 package command.base
 
+import command.Help
 import utils.Conf.cConfig
+import utils.Permissions
+import utils.lang.Message.debugMessage
+import utils.extras.ExtraCommandSender._
 
-import com.typesafe.config.{Config, ConfigValue}
-import dev.turtle.grenades.Main.debugMode
-import dev.turtle.grenades.command.Help
-import dev.turtle.grenades.utils.Permissions
-import dev.turtle.grenades.utils.Permissions.cCommands
-import dev.turtle.grenades.utils.lang.Message.{debugMessage, sendMessage}
+import com.typesafe.config.Config
 import org.bukkit.Bukkit.{getConsoleSender, getLogger}
 import org.bukkit.command.{Command, CommandSender, TabExecutor}
 
 import java.util
-import java.util.Map.Entry
 import scala.collection.immutable.Map
-import scala.collection.{immutable, mutable}
 import scala.collection.mutable.Map
-import scala.jdk.CollectionConverters.*
+import scala.collection.{immutable, mutable}
+import scala.jdk.CollectionConverters._
 import scala.util.control.Breaks.{break, breakable}
 
 trait CMD {
@@ -75,8 +73,8 @@ object CMD extends TabExecutor {
           val result: Boolean = o_cmd.execute(s, args)
           return result
         } else {
-          sendMessage(s, "commands.no-perm", immutable.Map("command" -> args(0)))
-          debugMessage(getConsoleSender, "console.notify.no-perm", immutable.Map(
+          s.sendMessage("commands.no-perm", immutable.Map("command" -> args(0)))
+          debugMessage("console.notify.no-perm", immutable.Map(
             "command" -> args(0),
             "sender" -> s.getName,
             "permission" -> permission

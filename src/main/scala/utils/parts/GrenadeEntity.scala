@@ -1,21 +1,19 @@
 package dev.turtle.grenades
 package utils.parts
 
-import Main.{debugMode, decimalFormat, plugin}
+import Main.{decimalFormat, plugin}
 import utils.Conf.cConfig
+import utils.lang.Message.debugMessage
 import utils.{Blocks, Grenade}
 
-import dev.turtle.grenades.utils.lang.Message.{debugMessage, sendMessage}
 import org.bukkit.Particle.DustOptions
 import org.bukkit.block.Block
-import org.bukkit.command.CommandSender
 import org.bukkit.entity.AbstractArrow.PickupStatus
-import org.bukkit.{Bukkit, ChatColor, Location, Material, NamespacedKey, Particle, World}
-import org.bukkit.entity.{ArmorStand, Arrow, Entity, EntityType, Item, Player, Snowball, TNTPrimed}
+import org.bukkit.entity.*
 import org.bukkit.event.entity.EntityExplodeEvent
 import org.bukkit.inventory.ItemStack
-import org.bukkit.persistence.PersistentDataType
 import org.bukkit.scheduler.{BukkitRunnable, BukkitTask}
+import org.bukkit.{Location, Particle, World}
 
 import scala.jdk.CollectionConverters.*
 
@@ -69,7 +67,7 @@ class GrenadeEntity(val grenade: Grenade,
       }
     } catch {
       case e: IllegalArgumentException =>
-        debugMessage(Bukkit.getConsoleSender, s"&8(${grenade.displayName}&8) &cCouldn't spawn &6'${grenade.model}'&c, entity not found!", Map())
+        debugMessage(s"&8(${grenade.displayName}&8) &cCouldn't spawn &6'${grenade.model}'&c, entity not found!", Map())
         selfDestruct = true
         return false
     }

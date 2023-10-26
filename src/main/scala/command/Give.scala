@@ -2,30 +2,30 @@ package dev.turtle.grenades
 package command
 
 import command.base.CMD
+import utils.Conf.grenades
+import utils.Grenade
+import utils.extras.ExtraCommandSender._
+import utils.optimized.OnlinePlayers
 
-import dev.turtle.grenades.utils.Conf.{cGrenades, grenades}
-import dev.turtle.grenades.utils.Grenade
-import dev.turtle.grenades.utils.lang.Message.sendMessage
-import dev.turtle.grenades.utils.optimized.OnlinePlayers
-import org.bukkit.{Bukkit, Material}
+import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 import org.bukkit.inventory.ItemStack
 
 import scala.collection.immutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object Give extends CMD{
   override def execute(s: CommandSender, args: Array[String]): Boolean = {
     if (args.length >= 3) {
       val target = Bukkit.getPlayer(args(1))
       if (!target.isValid){
-        sendMessage(s, "commands.not-found.target", Map(
+        s.sendMessage("commands.not-found.target", Map(
           "target" -> args(1)
         ))
         return true
       }
       if (!grenades.contains(args(2))) {
-        sendMessage(s, "commands.not-found.grenade", Map(
+        s.sendMessage("commands.not-found.grenade", Map(
           "grenade_id" -> args(2)
         ))
         return true
@@ -41,8 +41,8 @@ object Give extends CMD{
         "sender" -> s.getName,
         "amount" -> itemStack.getAmount.toString
       )
-      sendMessage(s, "commands.give.sender", give_map)
-      sendMessage(target, "commands.give.target", give_map)
+      s.sendMessage("commands.give.sender", give_map)
+      target.sendMessage("commands.give.target", give_map)
     }
 
     true

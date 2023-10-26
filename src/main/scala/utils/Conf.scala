@@ -6,11 +6,11 @@ import Main.*
 import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions, ConfigValueFactory}
 import Conf.*
 import dev.turtle.explosions.Prototype
-import dev.turtle.grenades.utils
 import utils.parts.{Explosion, ExplosionType, gParticle, gSound}
+import explosions.{AntiMatter, Classic, Replace}
+import utils.lang.Message.{clientLang, debugMessage, defaultLang, reloadClientLangs}
+import utils.extras.ExtraCommandSender._
 
-import dev.turtle.grenades.explosions.{AntiMatter, Classic, Replace}
-import dev.turtle.grenades.utils.lang.Message.{clientLang, debugMessage, defaultLang, sendMessage}
 import org.bukkit.{Bukkit, ChatColor}
 import org.bukkit.Bukkit.getLogger
 
@@ -22,6 +22,7 @@ import java.util
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import java.util.List as JavaList
+import scala.util.{Success, Try}
 
 object Conf {
   var cGrenades: Config = ConfigFactory.empty()
@@ -41,27 +42,34 @@ object Conf {
     "PROTOTYPE" -> Prototype
   ).withDefault(k => Classic)
 
-    def getFolder(path: String = ""): String = {
+    def getFolderRelativeToPlugin(path: String = ""): String = {
       val filePath = new File(s"plugins/${plugin.getName}/$path")
-      if (!filePath.exists()) {
-        filePath.mkdirs()
-      }
+      val pathSplit = path.split("\\.")
+      if (pathSplit.length > 1) {
+        val pathString = path.split("/")
+        val onlyPath = new File(s"plugins/${plugin.getName}/${
+          pathString.dropRight(1).mkString("/")
+        }")
+        onlyPath.mkdirs()
+      } else if (!filePath.exists()) {
+          filePath.mkdirs()
+        }
       filePath.getPath
     }
 
     def get(configName: String, toDefaultsFolder: Boolean = false): Config = {
-      val pluginFolder = getFolder()
+      val pluginFolder = getFolderRelativeToPlugin()
       var configFile = new File(s"${pluginFolder}/$configName.conf")
 
       if (toDefaultsFolder || !configFile.exists()) { // load default config
         val classLoader = getClass.getClassLoader
         val inputStream: InputStream = classLoader.getResourceAsStream(s"$configName.conf")
         if (toDefaultsFolder) {
-          val defaultsPath = getFolder("defaults")
+          val defaultsPath = getFolderRelativeToPlugin("defaults")
           configFile = new File(s"${defaultsPath}/$configName.conf")
           val splitConfigName = configName.split("/")
           if (splitConfigName.length > 1)
-            getFolder(s"defaults/${splitConfigName(0)}")
+            getFolderRelativeToPlugin(s"defaults/${splitConfigName(0)}")
         }
         if (inputStream != null) {
           try {
@@ -88,34 +96,35 @@ object Conf {
         ConfigFactory.parseFile(configFile)
       }
     }
-    def reloadConfigsInFolder(folderPath: String, fileType: String=".json"): Boolean = {
-      val folder = new File(getFolder(folderPath))
+    def reloadConfigsInFolder(folderPath: String, fileType: String=".json", toLowerCase: Boolean=false): Boolean = {
+      val folder = new File(getFolderRelativeToPlugin(folderPath))
       val files = folder.listFiles()
       if (files != null && files.nonEmpty) {
         for (file <- files) {
           if (file.getName.endsWith(fileType) && file.length() > 1) {
             val fileConfig = ConfigFactory.parseFile(file)
-            val updatedFileConfig = fileConfig.withValue(file.getName.split("\\.")(0), fileConfig.root())
+            val fileName = file.getName.split("\\.")(0)
+            val updatedFileConfig = fileConfig.withValue({if (toLowerCase) fileName.toLowerCase else fileName}, fileConfig.root())
             folderPath match
               case "landmines"  =>
                 landmines = landmines.withFallback(updatedFileConfig).resolve()
               case "lang" =>
                 cLang = cLang.withFallback(updatedFileConfig).resolve()
               case _ =>
-                sendMessage(Bukkit.getConsoleSender, s"&cAttempted to load unknown config: $folderPath", Map())
+                debugMessage(s"&cAttempted to load unknown config: $folderPath", Map())
           }
         }
       } else {
         folderPath match
           case "lang" =>
-            cLang = cLang.withValue("en_US", this.get(configName = "lang/en_US").root())
+            cLang = cLang.withValue("en_us", this.get(configName = "lang/en_US").root())
           case _ =>
             {}
       }
       true
     }
     def reloadGrenades(): Boolean = {
-      val grenadeTypesFolder = new File(getFolder("grenades"))
+      val grenadeTypesFolder = new File(getFolderRelativeToPlugin("grenades"))
       val grenadeTypesFiles = grenadeTypesFolder.listFiles()
       if (grenadeTypesFiles != null){
         for (grenadeTypeFile <- grenadeTypesFiles) {
@@ -192,14 +201,14 @@ object Conf {
       true
     }
     def save(config: Config, path: String=""): Boolean = {
-      val file = new File(path)
+      val file = new File(getFolderRelativeToPlugin(path))
       try {
         val writer = new BufferedWriter(new FileWriter(file))
         writer.write(config.root().render(ConfigRenderOptions.concise()))
         writer.close()
       } catch {
         case e: Exception =>
-          debugMessage(Bukkit.getConsoleSender, s"&cError saving '${file.getName}' to path: ${e.getMessage}", Map())
+          debugMessage(s"&cError saving '${file.getName}' to path: ${e.getMessage}", Map())
           return false
       }
       true
@@ -207,9 +216,10 @@ object Conf {
     def setValue(config: Config, path: String, value: String): Config = {
       config.withValue(path, ConfigValueFactory.fromAnyRef(value))
     }
+
     def reload(): Boolean = {
       cConfig = this.get("config").withFallback(this.get("config", true))
-      reloadConfigsInFolder(folderPath = "lang", fileType = ".conf")
+      reloadConfigsInFolder(folderPath = "lang", fileType = ".conf", toLowerCase=true)
       cExplosions = this.get("explosions").withFallback(this.get("explosions", true))
       cParticles = this.get("particles").withFallback(this.get("particles", true))
       cSounds = this.get("sounds").withFallback(this.get("sounds", true))
@@ -219,6 +229,7 @@ object Conf {
       pluginSep = cConfig.getString("general.plugin.sep")
       reloadGrenades()
       reloadConfigsInFolder(folderPath="landmines")
+      reloadClientLangs()
       true
     }
     def getLore(grenadeName: String): java.util.ArrayList[String] = {
@@ -253,4 +264,14 @@ object Conf {
       lore = lore.asScala.map(_.replaceAll("&", "§")).asJava
       java.util.ArrayList(lore)
     }
+
+  implicit class gConfig(config: Config) {
+    def isPathPresent(path: String): Boolean = {
+      Try(config.hasPath(path)) match {
+        case Success(true) => true
+        case _ =>
+          false
+      }
+    }
+  }
 }

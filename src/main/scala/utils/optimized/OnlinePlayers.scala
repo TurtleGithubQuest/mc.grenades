@@ -1,14 +1,15 @@
 package dev.turtle.grenades
 package utils.optimized
 
+import dev.turtle.grenades.utils.extras.ExtraListener
 import org.bukkit.Bukkit
 import org.bukkit.event.player.{PlayerJoinEvent, PlayerQuitEvent}
 import org.bukkit.event.{EventHandler, EventPriority, Listener}
 
 import scala.collection.mutable.ArrayBuffer
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
-object OnlinePlayers extends Listener{
+object OnlinePlayers extends ExtraListener {
   private var array: ArrayBuffer[String] = new ArrayBuffer[String]
   array ++= Bukkit.getOnlinePlayers.asScala.map(_.getName)
 

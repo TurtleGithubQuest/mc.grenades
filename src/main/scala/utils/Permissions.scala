@@ -1,10 +1,10 @@
 package dev.turtle.grenades
 package utils
 
-import com.typesafe.config.Config
 import utils.Conf.cConfig
+import utils.lang.Message.debugMessage
 
-import dev.turtle.grenades.utils.lang.Message.debugMessage
+import com.typesafe.config.Config
 import org.bukkit.Bukkit.getConsoleSender
 import org.bukkit.command.CommandSender
 
@@ -21,7 +21,7 @@ object Permissions {
           )
         hasPerm = true
     if (!hasPerm)
-      debugMessage(getConsoleSender, "console.notify.no-perm", Map("sender" -> s.getName))
+      debugMessage("console.notify.no-perm", Map("sender" -> s.getName))
     hasPerm
   }
 

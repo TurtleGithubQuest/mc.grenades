@@ -3,24 +3,26 @@ package events.bukkit
 
 import Main.{cooldown, decimalFormat}
 import utils.Blocks.canDestroyThatBlock
-import utils.Conf.*
-import utils.lang.Message.sendMessage
-import utils.{Conf, Grenade}
+import utils.Conf._
+import utils.Landmine.coordsFromLoc
+import utils.extras.ExtraListener
+import utils.extras.ExtraCommandSender._
+import utils.{Conf, Grenade, Landmine}
 
-import com.typesafe.config.{Config, ConfigValueFactory}
+import com.typesafe.config.ConfigValueFactory
 import de.tr7zw.changeme.nbtapi.NBTItem
 import net.md_5.bungee.api.ChatMessageType
+import org.bukkit.Material
 import org.bukkit.block.Block
-import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.bukkit.event.player.PlayerInteractEvent
-import org.bukkit.event.{EventHandler, EventPriority, Listener}
+import org.bukkit.event.{EventHandler, EventPriority}
 import org.bukkit.inventory.ItemStack
-import org.bukkit.{Location, Material}
 
+import scala.collection.immutable
 import scala.jdk.CollectionConverters.*
 
-class InteractEvent extends Listener{
+class InteractEvent extends ExtraListener {
 
   @EventHandler(priority = EventPriority.HIGH)
   private def interact(e: PlayerInteractEvent): Unit = {
@@ -42,7 +44,7 @@ class InteractEvent extends Listener{
       if (!p.hasPermission("grenades.cooldown.bypass")) {
         val cooldownInMs: Double = (cooldownThreshold - cooldownRemaining) / 100
         if (cConfig.getBoolean("cooldown.notify.enabled"))
-          sendMessage(p.asInstanceOf[CommandSender], "cooldown.notify", Map(
+          p.sendMessage("cooldown.notify", Map(
             "cooldown" -> decimalFormat.format(cooldownInMs / 10)),
             chatMessageType = {
               if (cConfig.getString("cooldown.notify.medium").equalsIgnoreCase("chat"))
@@ -64,15 +66,13 @@ class InteractEvent extends Listener{
           !cConfig.getBoolean("landmine.enabled")
       ) return
       val worldName: String = block.getWorld.getName
-      val loc: Location = e.getClickedBlock.getLocation
-      val landmineCoords = s"${loc.getChunk.getX}/${loc.getChunk.getZ}.${loc.getX.toInt}/${loc.getY.toInt}/${loc.getZ.toInt}"
+      val landmineCoords = Landmine.coordsFromLoc(  e.getClickedBlock.getLocation )
       if (!landmines.hasPath(worldName))
         landmines = landmines.withValue(worldName, ConfigValueFactory.fromMap(Map().asJava))
-      var worldConf: Config = landmines.getConfig(worldName)
-      worldConf = Conf.setValue(worldConf, s"$landmineCoords.owner", p.getName)
-      worldConf = Conf.setValue(worldConf, s"$landmineCoords.grenade_id", grenade_id)
-      Conf.save(worldConf, s"${getFolder("landmines")}/${worldName}.json")
-      reloadConfigsInFolder(folderPath="landmines")
+      Landmine.saveAndReloadAll(worldName, immutable.Map(
+        s"$landmineCoords.owner" -> p.getName,
+        s"$landmineCoords.grenade_id" -> grenade_id
+      ))
       block.setType(Material.OAK_PRESSURE_PLATE)
     } else {
       success = grenade.spawn(p.getLocation, p.getLocation.getDirection, owner = p)

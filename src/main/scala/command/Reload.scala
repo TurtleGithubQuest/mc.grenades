@@ -4,7 +4,7 @@ package command
 import command.base.CMD
 import utils.Conf
 
-import dev.turtle.grenades.utils.lang.Message.sendMessage
+import utils.extras.ExtraCommandSender._
 import org.bukkit.command.CommandSender
 
 object Reload extends CMD{
@@ -18,7 +18,7 @@ object Reload extends CMD{
       if (args(1).equalsIgnoreCase("all"))
         Conf.reload()
     }
-    sendMessage(s, "commands.reload.success", Map(
+    s.sendMessage("commands.reload.success", Map(
       "config" -> {
         if (args.length > 1) args(1).toLowerCase
         else "all"

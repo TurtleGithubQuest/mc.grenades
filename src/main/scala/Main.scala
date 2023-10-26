@@ -6,10 +6,11 @@ import events.bukkit.{InteractEvent, LandmineEvents}
 import utils.Conf
 import utils.Conf.*
 import utils.lang.Message.debugMessage
+import utils.optimized.OnlinePlayers
 
 import com.sk89q.worldedit.bukkit.WorldEditPlugin
 import de.tr7zw.changeme.nbtapi.NBTItem
-import dev.turtle.grenades.utils.optimized.OnlinePlayers
+import dev.turtle.grenades.utils.extras.{Listener}
 import net.coreprotect.CoreProtectAPI
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
@@ -40,10 +41,7 @@ class Main extends JavaPlugin {
     random = new Random
     Conf.reload()
     getCommand("grenade").setExecutor(CMD)
-    this.getServer.getPluginManager.registerEvents(new InteractEvent, this)
-    if (cConfig.getBoolean("landmine.enabled"))
-      this.getServer.getPluginManager.registerEvents(new LandmineEvents, this)
-    this.getServer.getPluginManager.registerEvents(OnlinePlayers, this)
+    Listener.registerAllEvents
     hookPlugins
   }
 
@@ -61,7 +59,7 @@ class Main extends JavaPlugin {
               coreprotectapi = plugin.asInstanceOf[CoreProtectAPI]
             case "FastAsyncWorldEdit" =>
               faweapi = plugin.asInstanceOf[WorldEditPlugin]
-          debugMessage(Bukkit.getConsoleSender, s"$pluginPrefix$pluginSep &eshook hands with $pluginName.", immutable.Map())
+          debugMessage(s"$pluginPrefix$pluginSep &eshook hands with $pluginName.", immutable.Map())
       }
     }
   }

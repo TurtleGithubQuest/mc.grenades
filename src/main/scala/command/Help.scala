@@ -1,10 +1,10 @@
 package dev.turtle.grenades
 package command
 
+import Main.pluginPrefix
 import command.base.CMD
+import utils.extras.ExtraCommandSender._
 
-import dev.turtle.grenades.Main.pluginPrefix
-import dev.turtle.grenades.utils.lang.Message.sendMessage
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
 
@@ -15,17 +15,17 @@ object Help extends CMD {
     } else if (args.length > 1) {
       val commandQuery: String = args(1)
       if (CMD.commands.contains(commandQuery)) {
-        sendMessage(s, CMD.commands(commandQuery).usage, Map())
+        s.sendMessage(CMD.commands(commandQuery).usage, Map())
       } else helpPage(s)
     }
     true
   }
   def helpPage(s: CommandSender): Unit = {
-    sendMessage(s,
+    s.sendMessage(
       s"&3&l==== $pluginPrefix &3&l===="
       , Map())
     for ((cmdName: String, cmd: CMD) <- CMD.commands) {
-      sendMessage(s, s"/g ${cmd.usage}", Map())
+      s.sendMessage(s"/g ${cmd.usage}", Map())
     }
     s.sendMessage("")
   }
