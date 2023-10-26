@@ -9,7 +9,6 @@ import dev.turtle.explosions.Prototype
 import utils.parts.{Explosion, ExplosionType, gParticle, gSound}
 import explosions.{AntiMatter, Classic, Replace}
 import utils.lang.Message.{clientLang, debugMessage, defaultLang, reloadClientLangs}
-import utils.extras.ExtraCommandSender._
 
 import org.bukkit.{Bukkit, ChatColor}
 import org.bukkit.Bukkit.getLogger
@@ -195,7 +194,8 @@ object Conf {
             customName = ChatColor.translateAlternateColorCodes('&',
                         getGrenadeInfo("entity.custom-name.value")),
             fuseTime = getGrenadeInfo("entity.fuse").toInt,
-            velocity = getGrenadeInfo("entity.velocity").toDouble
+            velocity = getGrenadeInfo("entity.velocity").toDouble,
+            customModelData = getGrenadeInfo("custom-model-data").toInt
         ))
       }
       true

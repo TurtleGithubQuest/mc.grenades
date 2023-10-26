@@ -3,9 +3,9 @@ package utils.lang
 
 import Main.debugMode
 import utils.Conf.{cConfig, cLang, getFolderRelativeToPlugin, save}
-import utils.extras.ExtraCommandSender._
 
 import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
+import dev.turtle.grenades.utils.extras.ExtraCommandSender
 import net.md_5.bungee.api.ChatMessageType
 import net.md_5.bungee.api.chat.TextComponent
 import org.bukkit.Bukkit.getConsoleSender
@@ -17,7 +17,7 @@ import java.io.{File, FileNotFoundException}
 import scala.collection.{immutable, mutable}
 import scala.jdk.CollectionConverters.*
 
-object Message {
+object Message extends ExtraCommandSender {
   val cMessaging = cConfig.getConfig("general.messaging")
   val defaultLang = cMessaging.getString("default.lang").toLowerCase
   val placeholderPrefix = cMessaging.getString("default.prefix.placeholder")

@@ -36,6 +36,7 @@ trait T_Grenade {
   def customName: String
   def fuseTime: Integer
   def velocity: Double
+  def customModelData: Integer
 }
 class Grenade(
              val id: String,
@@ -50,7 +51,8 @@ class Grenade(
              val customNameVisible: Boolean,
              val customName: String,
              val fuseTime: Integer,
-             val velocity: Double
+             val velocity: Double,
+             val customModelData: Integer
              ) extends T_Grenade {
 
       def apply: Boolean = {
@@ -79,6 +81,7 @@ class Grenade(
         val itemMeta = itemStack.getItemMeta
         itemMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', this.displayName))
         itemMeta.setLore(this.lore)
+        itemMeta.setCustomModelData(this.customModelData)
         itemStack.setItemMeta(itemMeta)
         itemStack
       }

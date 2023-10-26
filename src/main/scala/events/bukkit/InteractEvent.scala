@@ -3,10 +3,9 @@ package events.bukkit
 
 import Main.{cooldown, decimalFormat}
 import utils.Blocks.canDestroyThatBlock
-import utils.Conf._
+import utils.Conf.*
 import utils.Landmine.coordsFromLoc
-import utils.extras.ExtraListener
-import utils.extras.ExtraCommandSender._
+import utils.extras.{ExtraCommandSender, ExtraListener}
 import utils.{Conf, Grenade, Landmine}
 
 import com.typesafe.config.ConfigValueFactory
@@ -22,7 +21,7 @@ import org.bukkit.inventory.ItemStack
 import scala.collection.immutable
 import scala.jdk.CollectionConverters.*
 
-class InteractEvent extends ExtraListener {
+class InteractEvent extends ExtraListener, ExtraCommandSender {
 
   @EventHandler(priority = EventPriority.HIGH)
   private def interact(e: PlayerInteractEvent): Unit = {

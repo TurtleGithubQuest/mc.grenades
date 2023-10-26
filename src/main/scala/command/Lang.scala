@@ -2,19 +2,20 @@ package dev.turtle.grenades
 package command
 
 import command.base.CMD
-import utils.Conf._
+import utils.Conf.*
 import utils.Permissions
 import utils.lang.Message.clientLang
-import utils.extras.ExtraCommandSender._
 import utils.optimized.OnlinePlayers
 
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 
+import scala.collection.mutable
+
 object Lang extends CMD {
   val cmdName: String = CMD.getClass.getName.toLowerCase
   override def execute(s: CommandSender, args: Array[String]): Boolean = {
-    var placeholders = Map(
+    var placeholders: Map[String, String] = Map(
       "lang" -> clientLang(s.getName)
     )
     if (args.length == 1) {

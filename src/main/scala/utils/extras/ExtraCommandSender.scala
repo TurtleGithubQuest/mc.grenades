@@ -14,7 +14,7 @@ import org.bukkit.entity.Player
 
 import scala.collection.immutable
 
-object ExtraCommandSender {
+trait ExtraCommandSender {
   implicit class ExtraCommandSender(s: CommandSender) {
     def hasPerm(permission: String): Boolean = {
       Permissions.has(s, permission)

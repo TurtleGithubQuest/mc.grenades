@@ -4,7 +4,6 @@ package command
 import command.base.CMD
 import utils.Conf
 
-import utils.extras.ExtraCommandSender._
 import org.bukkit.command.CommandSender
 
 object Reload extends CMD{

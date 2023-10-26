@@ -5,27 +5,27 @@ package command.base
 import command.Help
 import utils.Conf.cConfig
 import utils.Permissions
+import utils.extras.ExtraCommandSender
 import utils.lang.Message.debugMessage
-import utils.extras.ExtraCommandSender._
 
 import com.typesafe.config.Config
-import org.bukkit.Bukkit.{getConsoleSender, getLogger}
+import org.bukkit.Bukkit.getLogger
 import org.bukkit.command.{Command, CommandSender, TabExecutor}
 
 import java.util
 import scala.collection.immutable.Map
 import scala.collection.mutable.Map
 import scala.collection.{immutable, mutable}
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.control.Breaks.{break, breakable}
 
-trait CMD {
+trait CMD extends ExtraCommandSender {
   def execute(sender: CommandSender, args: Array[String]): Boolean
   def suggestions(sender: CommandSender, args: Array[String]): Array[String]
   def usage: String
 }
 
-object CMD extends TabExecutor {
+object CMD extends TabExecutor, ExtraCommandSender {
   def createCommand(fn: (CommandSender, Array[String]) => Boolean): (CommandSender, Array[String]) => Boolean = fn
 
   var commands: mutable.Map[String, CMD] = mutable.Map()
@@ -68,8 +68,7 @@ object CMD extends TabExecutor {
       if (commands.contains(arg0)){
         val o_cmd: CMD = commands(arg0)
         val permission: String = Permissions.get(args(0), CMD.getClass.getName.toLowerCase)
-        val hasPerm: Boolean = Permissions.has(s, permission)
-        if (hasPerm) {
+        if (s.hasPerm(permission)) {
           val result: Boolean = o_cmd.execute(s, args)
           return result
         } else {

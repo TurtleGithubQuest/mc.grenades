@@ -4,7 +4,7 @@ package command
 import command.base.CMD
 import utils.Conf.grenades
 import utils.Grenade
-import utils.extras.ExtraCommandSender._
+//import utils.extras.ExtraCommandSender._
 import utils.optimized.OnlinePlayers
 
 import org.bukkit.Bukkit
@@ -14,7 +14,7 @@ import org.bukkit.inventory.ItemStack
 import scala.collection.immutable
 import scala.jdk.CollectionConverters.*
 
-object Give extends CMD{
+object Give extends CMD {
   override def execute(s: CommandSender, args: Array[String]): Boolean = {
     if (args.length >= 3) {
       val target = Bukkit.getPlayer(args(1))

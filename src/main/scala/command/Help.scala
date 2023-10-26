@@ -3,7 +3,6 @@ package command
 
 import Main.pluginPrefix
 import command.base.CMD
-import utils.extras.ExtraCommandSender._
 
 import org.bukkit.ChatColor
 import org.bukkit.command.CommandSender
