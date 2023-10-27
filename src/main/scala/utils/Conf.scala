@@ -5,11 +5,11 @@ import Main.*
 
 import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions, ConfigValueFactory}
 import Conf.*
-import dev.turtle.explosions.Prototype
-import utils.parts.{Explosion, ExplosionType, gParticle, gSound}
-import explosions.{AntiMatter, Classic, Replace}
+import utils.parts.{Explosion, gParticle, gSound}
+import explosions.{AntiMatter, Classic, Replace, Prototype}
 import utils.lang.Message.{clientLang, debugMessage, defaultLang, reloadClientLangs}
 
+import dev.turtle.grenades.explosions.base.GrenadeExplosion
 import org.bukkit.{Bukkit, ChatColor}
 import org.bukkit.Bukkit.getLogger
 
@@ -34,7 +34,7 @@ object Conf {
   var landmines: Config = ConfigFactory.empty()
 
   var grenades: mutable.Map[String, Grenade] = mutable.Map()
-  var explosionTypes: mutable.Map[String, ExplosionType] = mutable.Map(
+  var explosionTypes: mutable.Map[String, GrenadeExplosion] = mutable.Map(
     "ANTIMATTER" -> AntiMatter,
     "REPLACE" -> Replace,
     "CLASSIC" -> Classic,
@@ -170,6 +170,8 @@ object Conf {
                 colorFade = org.bukkit.Color.fromRGB(decodedColor.getRed, decodedColor.getGreen, decodedColor.getBlue)
               ),
               power = getExplosionInfo("power").toInt,
+              damage = getExplosionInfo("damage").toDouble,
+              dropItems = getExplosionInfo("drop-items").toInt,
               shape = getExplosionInfo("shape").toUpperCase,
               sound = new gSound(
                 name = getSoundInfo("name").toLowerCase.replaceAll("_", "."),
@@ -230,6 +232,7 @@ object Conf {
       reloadGrenades()
       reloadConfigsInFolder(folderPath="landmines")
       reloadClientLangs()
+      Blocks.reloadVariables(newInterval=cConfig.getLong("general.block-queue.interval"), newMaxBlocksPerLoop=cConfig.getInt("general.block-queue.max-blocks-per-loop"))
       true
     }
     def getLore(grenadeName: String): java.util.ArrayList[String] = {

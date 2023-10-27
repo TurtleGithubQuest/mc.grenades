@@ -6,6 +6,7 @@ import utils.Conf.cConfig
 import utils.lang.Message.debugMessage
 import utils.{Blocks, Grenade}
 
+import dev.turtle.grenades.explosions.base.GrenadeExplosion
 import org.bukkit.Particle.DustOptions
 import org.bukkit.block.Block
 import org.bukkit.entity.AbstractArrow.PickupStatus
@@ -15,7 +16,11 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.scheduler.{BukkitRunnable, BukkitTask}
 import org.bukkit.{Location, Particle, World}
 
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success, Try}
 
 class GrenadeEntity(val grenade: Grenade,
                     val owner: Player = null
@@ -83,16 +88,24 @@ class GrenadeEntity(val grenade: Grenade,
 
   def detonate(): Boolean = {
     val gModelLocation = gModel.getLocation
-    val blocks: Array[Block] = Blocks.getInRadius(gModelLocation, grenade.explosion.power)
+    val blocksInRadiusAsync: Future[Array[Block]] = Blocks.getInRadius(gModelLocation, grenade.explosion.power)
     val originName = {
       if (owner ne null) owner.getName
       else "unknown"
     }
     gModelLocation.getWorld.playSound(gModelLocation, grenade.explosion.sound.name, grenade.explosion.sound.volume, grenade.explosion.sound.pitch)
-    val entityExplodeEvent = new EntityExplodeEvent(gModel, gModelLocation, blocks.toList.asJava, grenade.explosion.power.toFloat)
-    plugin.getServer.getPluginManager.callEvent(entityExplodeEvent)
-    if (!entityExplodeEvent.isCancelled)
-      grenade.explosion.name.detonate(gModelLocation, blocks, originName=originName, params=grenade.explosion.extra)
+    val result: Try[Array[Block]] = Await.ready(blocksInRadiusAsync, Duration.Inf).value.get
+    result match {
+      case Success(blocks) =>
+        val entityExplodeEvent = new EntityExplodeEvent (gModel, gModelLocation, blocks.toList.asJava, grenade.explosion.power.toFloat)
+        plugin.getServer.getPluginManager.callEvent (entityExplodeEvent)
+        if (! entityExplodeEvent.isCancelled) {
+          //var droppedItems = grenade.explosion.name.detonate(gModelLocation, power=grenade.explosion.power, blocks=blocks, originName = originName,dropItems=1, params = grenade.explosion.extra)
+          val droppedItems = grenade.explosion.name.detonate(gModelLocation, grenade, blocks=blocks)
+        }
+      case Failure(f) =>
+        return false
+    }
     true
   }
   private object countdown {

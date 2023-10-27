@@ -1,30 +1,34 @@
 package dev.turtle.grenades
 package explosions
 
+import explosions.base.GrenadeExplosion
+import utils.Blocks.ShrimpleBlock
+import utils.Conf.{cConfig, gConfig}
+
 import com.typesafe.config.Config
-import utils.Blocks.setBlockType
-import utils.Conf.cConfig
-import utils.parts.ExplosionType
-
-import org.bukkit.{Bukkit, Location, Material}
 import org.bukkit.block.Block
+import org.bukkit.inventory.ItemStack
+import org.bukkit.{Location, Material}
 
-object Replace extends ExplosionType{
-  override def detonate(loc: Location, blocks: Array[Block], originName: String, params:String): Boolean = {
-    val material: Material = Material.valueOf(params.toUpperCase)
+object Replace extends GrenadeExplosion{
+  override def detonate(loc: Location, blocks: Array[Block]): Boolean = {
+    val material: Material = Material.valueOf(explosionExtra.toUpperCase)
     val cReplacers: Config = /*cConfig.getConfig(s"explosion-type.replace.$params").withFallback(cConfig.getConfig("explosion-type.replace.default"))*/ {
-      if (cConfig.hasPath(s"explosion-type.replace.$params"))
-        cConfig.getConfig(s"explosion-type.replace.$params")
+      if (cConfig.isPathPresent(s"explosion-type.replace.$explosionExtra"))
+        cConfig.getConfig(s"explosion-type.replace.$explosionExtra")
       else
         cConfig.getConfig(s"explosion-type.replace.default")
     }.withFallback(cConfig.getConfig(s"explosion-type.replace.default"))
 
     val depth: Integer = cReplacers.getInt("depth")
-    val dropItems: Boolean = cReplacers.getBoolean("drop-items")
-    for (block <- blocks) {
-      if ((depth <= 0 || loc.getY - depth < block.getY) && block.getY <= loc.getY)
-        if (block.getType != Material.AIR)
-          setBlockType(block, material, dropItems, originName=originName)
+    val dropItemsConfig: Boolean = cReplacers.getBoolean("drop-items")
+    this.blockMap = blocks.filter { block =>
+      (depth <= 0 || loc.getY - depth < block.getY) && block.getY <= loc.getY && block.getType != Material.AIR
+    }.map { block =>
+      if (dropItemsConfig && dropItems > 0) {
+        this.droppedItems :+ block.getDrops
+      }
+      ShrimpleBlock(block, material)
     }
     true
   }

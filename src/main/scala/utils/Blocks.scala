@@ -2,14 +2,21 @@ package dev.turtle.grenades
 
 package utils
 
-import org.bukkit.{Bukkit, Location, Material}
-import utils.gBlock
+import Main.{coreprotectapi, plugin, pluginPrefix, pluginSep}
 
-import dev.turtle.grenades.Main.coreprotectapi
+import dev.turtle.grenades.utils.lang.Message.debugMessage
+import org.bukkit.Bukkit.getLogger
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
 import org.bukkit.event.block.BlockBreakEvent
+import org.bukkit.scheduler.BukkitRunnable
+import org.bukkit.{Bukkit, Location, Material, World}
 
+import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
+import scala.collection.mutable
+import scala.concurrent.{Await, Future}
+import scala.concurrent.blocking
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.math.{pow, sqrt}
 
 trait T_gBlock {
@@ -22,28 +29,95 @@ class gBlock(val block: Block,
 
 
 object Blocks {
-  def getInRadius(loc: Location, radius: Integer, player: Player = null): Array[Block] = {
-    var blocks: Array[Block] = new Array[Block](0)
-    for (x <- -radius to radius) {
-      for (y <- -radius to radius) {
-        for (z <- -radius to radius) {
-          val distFromCenter: Int = Math.abs(x)
-          val distance = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2))
-          if (distance <= radius) {
-            var block: Block = loc.getWorld.getBlockAt(
-              loc.getBlockX + x,
-              loc.getBlockY + y,
-              loc.getBlockZ + z
-            )
-            if (player != null) {
-              if (canDestroyThatBlock(player, block))
-                blocks = blocks :+ block
-            } else blocks = blocks :+ block
+  case class ShrimpleBlock(block: Block, newMaterial: Material)
+
+  val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+  private var interval: Long = 1L
+  private var maxBlocksPerLoop: Integer = 5000
+  private var isQueuerRunning: Boolean = false
+
+  private var blockQueue: mutable.Map[World, mutable.Queue[ShrimpleBlock]] = mutable.Map()
+
+  def reloadVariables(newInterval: Long, newMaxBlocksPerLoop: Integer): Boolean = {
+    this.isQueuerRunning = false
+    this.interval = {
+      if (newInterval<1)
+        1
+      else newInterval
+    }
+    this.maxBlocksPerLoop = newMaxBlocksPerLoop
+    runBlockPlaceExecutor()
+    true
+  }
+  def runBlockPlaceExecutor(): Unit = {
+    val initialDelay = 1L
+    val task = new Runnable {
+      def run(): Unit = {
+        if (!isQueuerRunning) {
+          debugMessage(s"&6block queue service &cstopped&6.")
+          throw new RuntimeException("finished")
+        }
+        try
+          placeBlocks()
+        catch {
+          case e: Throwable =>
+            debugMessage(e.toString)
+            debugMessage(e.getStackTrace.mkString("Array(", ", ", ")"))
+        }
+      }
+      debugMessage(s"&6block queue service &2started&6. &7(&8${interval}&7mcs;&8${maxBlocksPerLoop}&7bpl)")
+      isQueuerRunning = true
+    }
+    scheduler.scheduleAtFixedRate(task, initialDelay, interval, TimeUnit.MICROSECONDS)
+  }
+  def placeBlocks(): Unit = {
+    for (world <- blockQueue.keys) {
+      if (blockQueue.contains(world)) {
+        0 to maxBlocksPerLoop foreach { _ =>
+          if (blockQueue(world).nonEmpty) {
+            val shrimpleBlock: ShrimpleBlock = blockQueue(world).dequeue()
+            if (shrimpleBlock.newMaterial ne shrimpleBlock.block.getType)
+              new BukkitRunnable() {
+                @Override
+                def run(): Unit = {
+                  shrimpleBlock.block.setType(shrimpleBlock.newMaterial)
+                }
+              }.runTask(plugin)
           }
         }
       }
     }
-    return blocks
+  }
+
+  def addToQueue(world: World, blocksArray: Array[ShrimpleBlock]): Boolean = {
+    if (!isQueuerRunning)
+      runBlockPlaceExecutor()
+    if (blockQueue.contains(world)) {
+      blockQueue(world) ++= blocksArray
+    } else {
+      blockQueue.put(world, mutable.Queue(blocksArray: _*))
+    }
+    debugMessage(s"&7Added ${blocksArray.length} blocks to queue")
+    true
+  }
+  def getInRadius(loc: Location, radius: Integer, player: Player = null): Future[Array[Block]] = Future /*Array[Block] =*/ {
+    blocking {
+      val blocks = for {
+        x <- -radius to radius
+        y <- -radius to radius
+        z <- -radius to radius
+        distFromCenter = Math.abs(x)
+        distance = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2))
+        if distance <= radius
+      } yield loc.getWorld.getBlockAt(loc.getBlockX + x, loc.getBlockY + y, loc.getBlockZ + z)
+
+      val filteredBlocks = player match {
+        case null => blocks
+        case _ => blocks.filter(canDestroyThatBlock(player, _))
+      }
+
+      filteredBlocks.toArray
+    }
   }
 
   def canDestroyThatBlock(player: Player, block: Block): Boolean = {

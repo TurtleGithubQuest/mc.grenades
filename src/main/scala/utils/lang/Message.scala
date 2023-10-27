@@ -1,10 +1,10 @@
 package dev.turtle.grenades
 package utils.lang
 
-import Main.debugMode
+import Main.{debugMode, pluginPrefix, pluginSep}
 import utils.Conf.{cConfig, cLang, getFolderRelativeToPlugin, save}
 
-import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
+import com.typesafe.config.{ConfigException, ConfigFactory, ConfigValueFactory}
 import dev.turtle.grenades.utils.extras.ExtraCommandSender
 import net.md_5.bungee.api.ChatMessageType
 import net.md_5.bungee.api.chat.TextComponent
@@ -24,9 +24,9 @@ object Message extends ExtraCommandSender {
   val textPrefix = cMessaging.getString("default.prefix.text")
   var clientLang: mutable.Map[String, String] = mutable.Map().withDefault(k => defaultLang)
 
-  def debugMessage(path: String, placeholders: immutable.Map[String, String], chatMessageType: ChatMessageType = ChatMessageType.CHAT): Boolean = {
+  def debugMessage(path: String, placeholders: immutable.Map[String, String]=immutable.Map(), chatMessageType: ChatMessageType = ChatMessageType.CHAT): Boolean = {
     if (debugMode)
-      getConsoleSender.sendMessage(path, placeholders, chatMessageType)
+      getConsoleSender.sendMessage(s"$pluginPrefix$pluginSep$path", placeholders, chatMessageType)
     true
   }
   def reloadClientLangs(): Boolean = {
@@ -34,8 +34,10 @@ object Message extends ExtraCommandSender {
     loadClientLangs()
   }
   def saveClientLangs(): Boolean = {
-    save(
-      ConfigFactory.empty().withValue("clientLang", ConfigValueFactory.fromMap(clientLang.asJava)),
+    if (clientLang.isEmpty)
+      loadClientLangs()
+    save(ConfigFactory.empty()
+      .withValue("clientLang", ConfigValueFactory.fromMap(clientLang.asJava)),
       "data/clientLang.json"
     )
   }
@@ -51,7 +53,7 @@ object Message extends ExtraCommandSender {
         .view
         .mapValues(_.toString).to(collection.mutable.Map)
     } catch {
-      case _: FileNotFoundException => mutable.Map().withDefault(k => defaultLang)
+      case _: FileNotFoundException | _: ConfigException => mutable.Map().withDefault(k => defaultLang)
     }
     true
   }

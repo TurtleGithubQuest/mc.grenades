@@ -23,7 +23,5 @@ libraryDependencies ++= Seq(
   "org.spigotmc" % "spigot-api" % "1.20.2-R0.1-SNAPSHOT" % "provided",
   "de.tr7zw" % "item-nbt-api" % "2.12.0" % "compile",
   "net.coreprotect" % "coreprotect" % "21.3" % "provided",
-  "com.typesafe" % "config" % "1.4.2",
-  "com.fastasyncworldedit" % "FastAsyncWorldEdit-Bukkit" % "2.5.2" % "provided",
-  "com.fastasyncworldedit" % "FastAsyncWorldEdit-Core" % "2.5.2" % "provided"
+  "com.typesafe" % "config" % "1.4.2"
 )

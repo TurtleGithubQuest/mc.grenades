@@ -1,23 +1,24 @@
-package dev.turtle
+package dev.turtle.grenades
 package explosions
 
-import grenades.utils.parts.ExplosionType
+import explosions.base.GrenadeExplosion
+import utils.Blocks.ShrimpleBlock
 
-import org.bukkit.{Location, Material, World}
-import dev.turtle.grenades.utils.Blocks.setBlockType
 import org.bukkit.block.Block
+import org.bukkit.{Location, Material, World}
 
-object Prototype extends ExplosionType{
-  override def detonate(loc: Location, blocks: Array[Block], originName: String, params: String): Boolean = {
+object Prototype extends GrenadeExplosion {
+  override def detonate(loc: Location, blocks: Array[Block]): Boolean = {
     var offsetY = 0
     val previousBlock: Block = blocks(0)
     val world: World = loc.getWorld
-    for (block <- blocks) {
-      block.getLocation.setY(loc.getY)
-      if (previousBlock.getY < block.getY) offsetY += 1
-      else offsetY = 0
-      setBlockType(world.getBlockAt(block.getX, block.getY+offsetY, block.getZ), block.getType, false, originName=originName)
-      setBlockType(block, Material.AIR, false, originName=originName)
+    this.blockMap = blocks.map {
+      block =>
+        block.getLocation.setY(loc.getY)
+        if (previousBlock.getY < block.getY) offsetY += 1
+        else offsetY = 0
+        ShrimpleBlock(world.getBlockAt(block.getX, block.getY+offsetY, block.getZ), block.getType)
+        ShrimpleBlock(block, Material.AIR)
     }
     true
   }
