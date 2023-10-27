@@ -5,7 +5,7 @@ package utils.parts
 import explosions.base.GrenadeExplosion
 
 trait T_Explosion {
-  def name: GrenadeExplosion
+  def name: String
   def particles: gParticle
   def shape: String
   def power: Integer
@@ -15,7 +15,7 @@ trait T_Explosion {
   def extra: String
 }
 class Explosion(
-                val name: GrenadeExplosion,
+                val name: String,
                 val particles: gParticle,
                 val power: Integer,
                 val damage: Double,

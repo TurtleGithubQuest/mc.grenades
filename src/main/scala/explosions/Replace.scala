@@ -7,10 +7,9 @@ import utils.Conf.{cConfig, gConfig}
 
 import com.typesafe.config.Config
 import org.bukkit.block.Block
-import org.bukkit.inventory.ItemStack
 import org.bukkit.{Location, Material}
 
-object Replace extends GrenadeExplosion{
+class Replace extends GrenadeExplosion{
   override def detonate(loc: Location, blocks: Array[Block]): Boolean = {
     val material: Material = Material.valueOf(explosionExtra.toUpperCase)
     val cReplacers: Config = /*cConfig.getConfig(s"explosion-type.replace.$params").withFallback(cConfig.getConfig("explosion-type.replace.default"))*/ {

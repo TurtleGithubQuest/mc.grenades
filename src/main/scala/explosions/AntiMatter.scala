@@ -7,7 +7,7 @@ import utils.Blocks.ShrimpleBlock
 import org.bukkit.block.Block
 import org.bukkit.{Location, Material, World}
 
-object AntiMatter extends GrenadeExplosion {
+class AntiMatter extends GrenadeExplosion {
   override def detonate(loc: Location, blocks: Array[Block]): Boolean = {
     val world: World = blocks(0).getWorld
     this.blockMap = blocks.map {

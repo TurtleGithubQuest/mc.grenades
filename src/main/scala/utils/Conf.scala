@@ -34,12 +34,12 @@ object Conf {
   var landmines: Config = ConfigFactory.empty()
 
   var grenades: mutable.Map[String, Grenade] = mutable.Map()
-  var explosionTypes: mutable.Map[String, GrenadeExplosion] = mutable.Map(
-    "ANTIMATTER" -> AntiMatter,
-    "REPLACE" -> Replace,
-    "CLASSIC" -> Classic,
-    "PROTOTYPE" -> Prototype
-  ).withDefault(k => Classic)
+  var explosionTypes: mutable.Map[String, String] = mutable.Map(
+    "ANTIMATTER" -> "AntiMatter",
+    "CLASSIC" -> "Classic",
+    "PROTOTYPE" -> "Prototype",
+    "REPLACE" -> "Replace"
+  ).withDefault(k => "Classic")
 
     def getFolderRelativeToPlugin(path: String = ""): String = {
       val filePath = new File(s"plugins/${plugin.getName}/$path")
@@ -160,7 +160,7 @@ object Conf {
             displayName = getGrenadeInfo("item.display-name"),
             lore = getLore(keyName),
             explosion = new Explosion(
-              name = explosionTypes(getExplosionInfo("name").toUpperCase),
+              name = s"dev.turtle.grenades.explosions.${explosionTypes(getExplosionInfo("name").toUpperCase)}",
               particles = new gParticle(
                 name = getParticleInfoExplosion("name").toUpperCase,
                 amount = getParticleInfoExplosion("amount").toInt,

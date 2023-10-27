@@ -9,14 +9,15 @@ import org.bukkit.block.Block
 import org.bukkit.entity.Damageable
 import org.bukkit.inventory.ItemStack
 
+import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.*
 
 trait GrenadeExplosion {
-  def detonate(loc: Location, blocks: Array[Block]): Boolean
+  def detonate(loc: Location, blocks: Array[Block]): Boolean//ArrayBuffer[ItemStack]
 
   var detonationLoc: Location = null
   var blockMap: Array[ShrimpleBlock] = new Array[ShrimpleBlock](0)
-  var droppedItems = new Array[ItemStack](0)
+  var droppedItems: ArrayBuffer[ItemStack] = ArrayBuffer.empty[ItemStack]
   var grenade: Grenade = null
   var dropItems: Integer = 1
   var damage: Double = 1
@@ -31,7 +32,11 @@ trait GrenadeExplosion {
     }
     true
   }
-
+  implicit class ExtraBuffer(droppedItems: ArrayBuffer[ItemStack]) {
+    def add(drops: java.util.Collection[org.bukkit.inventory.ItemStack]): ArrayBuffer[ItemStack] = {
+      droppedItems ++= drops.asScala
+    }
+  }
   def detonate(loc: Location, grenade: Grenade, blocks: Array[Block]): Array[ItemStack] = {
     this.detonationLoc=loc
     this.grenade=grenade
@@ -41,6 +46,6 @@ trait GrenadeExplosion {
     this.explosionExtra=grenade.explosion.extra
     detonate(loc: Location, blocks: Array[Block])
     cleanup()
-    this.droppedItems
+    this.droppedItems.toArray
   }
 }

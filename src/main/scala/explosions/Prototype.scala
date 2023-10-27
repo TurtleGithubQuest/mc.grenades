@@ -7,7 +7,7 @@ import utils.Blocks.ShrimpleBlock
 import org.bukkit.block.Block
 import org.bukkit.{Location, Material, World}
 
-object Prototype extends GrenadeExplosion {
+class Prototype extends GrenadeExplosion {
   override def detonate(loc: Location, blocks: Array[Block]): Boolean = {
     var offsetY = 0
     val previousBlock: Block = blocks(0)

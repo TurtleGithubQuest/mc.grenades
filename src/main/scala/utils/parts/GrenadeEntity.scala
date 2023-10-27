@@ -16,6 +16,7 @@ import org.bukkit.inventory.ItemStack
 import org.bukkit.scheduler.{BukkitRunnable, BukkitTask}
 import org.bukkit.{Location, Particle, World}
 
+import java.lang.Class.forName
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -101,7 +102,12 @@ class GrenadeEntity(val grenade: Grenade,
         plugin.getServer.getPluginManager.callEvent (entityExplodeEvent)
         if (! entityExplodeEvent.isCancelled) {
           //var droppedItems = grenade.explosion.name.detonate(gModelLocation, power=grenade.explosion.power, blocks=blocks, originName = originName,dropItems=1, params = grenade.explosion.extra)
-          val droppedItems = grenade.explosion.name.detonate(gModelLocation, grenade, blocks=blocks)
+          //val droppedItems = grenade.explosion.name.detonate(gModelLocation, grenade, blocks=blocks)
+          val gExplosion: GrenadeExplosion = forName(grenade.explosion.name).getDeclaredConstructor().newInstance().asInstanceOf[GrenadeExplosion]
+          val droppedItems = gExplosion.detonate(gModelLocation, grenade, blocks=blocks)
+          val world: World = gModelLocation.getWorld
+          for (item <- droppedItems)
+            world.dropItem(gModelLocation, item)
         }
       case Failure(f) =>
         return false
