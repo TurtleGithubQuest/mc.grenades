@@ -63,6 +63,6 @@ object Give extends CMD {
   }
 
   override def usage: String = {
-    "give <player> <grenade_id> <amount>"
+    "give <player> <grenade_id> [amount]"
   }
 }

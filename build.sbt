@@ -5,7 +5,7 @@ ThisBuild / scalaVersion := "3.3.1"
 lazy val root = (project in file("."))
   .settings(
     name := "Grenades_scala",
-    idePackagePrefix := Some("dev.turtle.grenades"),
+    idePackagePrefix.withRank(KeyRanks.Invisible) := Some("dev.turtle.grenades"),
     assembly / mainClass := Some("dev.turtle.grenades.Main"),
     assembly / assemblyOutputPath := file(s"S:\\mc_server\\plugins\\${name.value}.jar"),
     ThisBuild / assemblyShadeRules := Seq(
@@ -15,8 +15,7 @@ lazy val root = (project in file("."))
 resolvers ++= Seq(
   "Spigot Snapshots" at "https://hub.spigotmc.org/nexus/content/repositories/snapshots",
   "codemc-repo" at "https://repo.codemc.org/repository/maven-public/",
-  "net-coreprotect" at "https://maven.playpro.com",
-  "fawe/papermc" at "https://repo.papermc.io/repository/maven-public"
+  "net-coreprotect" at "https://maven.playpro.com"
 )
 
 libraryDependencies ++= Seq(

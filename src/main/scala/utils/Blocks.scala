@@ -2,34 +2,26 @@ package dev.turtle.grenades
 
 package utils
 
-import Main.{coreprotectapi, plugin, pluginPrefix, pluginSep}
+import Main.{coreprotectapi, plugin}
+import enums.DropLocation
+import utils.extras.{ExtraBlock, ExtraItemStack}
+import utils.lang.Message.debugMessage
 
-import dev.turtle.grenades.utils.lang.Message.debugMessage
-import org.bukkit.Bukkit.getLogger
 import org.bukkit.block.Block
 import org.bukkit.entity.Player
 import org.bukkit.event.block.BlockBreakEvent
+import org.bukkit.inventory.InventoryHolder
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.{Bukkit, Location, Material, World}
 
 import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
 import scala.collection.mutable
-import scala.concurrent.{Await, Future}
-import scala.concurrent.blocking
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, blocking}
 import scala.math.{pow, sqrt}
 
-trait T_gBlock {
-  def block: Block
-  def removable: Boolean
-}
-class gBlock(val block: Block,
-             val removable: Boolean
-            ) extends T_gBlock
-
-
 object Blocks {
-  case class ShrimpleBlock(block: Block, newMaterial: Material)
+  case class ShrimpleBlock(block: Block, newMaterial: Material, dropItems: Integer, dropLocations: Array[DropLocation]=Array.empty[DropLocation], source: InventoryHolder=null)
 
   val scheduler: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
   private var interval: Long = 1L
@@ -80,6 +72,8 @@ object Blocks {
               new BukkitRunnable() {
                 @Override
                 def run(): Unit = {
+                  for (item <- shrimpleBlock.block.getAllDrops)
+                    item.drop(shrimpleBlock.dropLocations, blockLoc=shrimpleBlock.block.getLocation, inventoryHolder=shrimpleBlock.source)
                   shrimpleBlock.block.setType(shrimpleBlock.newMaterial)
                 }
               }.runTask(plugin)
@@ -97,7 +91,7 @@ object Blocks {
     } else {
       blockQueue.put(world, mutable.Queue(blocksArray: _*))
     }
-    debugMessage(s"&7Added ${blocksArray.length} blocks to queue")
+    debugMessage(s"&7Added ${blocksArray.length} blocks to queue", debugLevel=10)
     true
   }
   def getInRadius(loc: Location, radius: Integer, player: Player = null): Future[Array[Block]] = Future /*Array[Block] =*/ {

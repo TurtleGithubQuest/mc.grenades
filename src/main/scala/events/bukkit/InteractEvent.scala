@@ -59,22 +59,25 @@ class InteractEvent extends ExtraListener, ExtraCommandSender {
     var success: Boolean = true
     if (grenade.isLandmine) {
       val block: Block = e.getClickedBlock
-      if (block == null ||
-          block.getType.equals(Material.AIR) ||
-          !canDestroyThatBlock(p, block) ||
-          !cConfig.getBoolean("landmine.enabled")
-      ) return
-      val worldName: String = block.getWorld.getName
-      val landmineCoords = Landmine.coordsFromLoc(  e.getClickedBlock.getLocation )
-      if (!landmines.hasPath(worldName))
-        landmines = landmines.withValue(worldName, ConfigValueFactory.fromMap(Map().asJava))
-      Landmine.saveAndReloadAll(worldName, immutable.Map(
-        s"$landmineCoords.owner" -> p.getName,
-        s"$landmineCoords.grenade_id" -> grenade_id
-      ))
-      block.setType(Material.OAK_PRESSURE_PLATE)
+      if (!cConfig.getBoolean("landmine.enabled")) {}
+      else if (block == null ||
+          block.getType.equals(Material.AIR)
+      ) p.sendMessage("landmine.placement.invalid", Map())
+      else if (!canDestroyThatBlock(p, block))
+        p.sendMessage("landmine.placement.no-perm", Map())
+      else {
+        val worldName: String = block.getWorld.getName
+        val landmineCoords = Landmine.coordsFromLoc(e.getClickedBlock.getLocation)
+        if (!landmines.hasPath(worldName))
+          landmines = landmines.withValue(worldName, ConfigValueFactory.fromMap(Map().asJava))
+        Landmine.saveAndReloadAll(worldName, immutable.Map(
+          s"$landmineCoords.owner" -> p.getName,
+          s"$landmineCoords.grenade_id" -> grenade_id
+        ))
+        block.setType(Material.OAK_PRESSURE_PLATE)
+      }
     } else {
-      success = grenade.spawn(p.getLocation, p.getLocation.getDirection, owner = p)
+      success = (grenade.spawn(p.getLocation, p.getLocation.getDirection, owner = p) ne null)
     }
     if (success)
       itemInHand.setAmount(itemInHand.getAmount - 1)

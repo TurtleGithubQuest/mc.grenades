@@ -3,17 +3,14 @@ package command
 
 import command.base.CMD
 import utils.Conf.*
-import utils.Permissions
+import utils.extras.ExtraConfig
 import utils.lang.Message.clientLang
 import utils.optimized.OnlinePlayers
 
 import org.bukkit.Bukkit
 import org.bukkit.command.CommandSender
 
-import scala.collection.mutable
-
 object Lang extends CMD {
-  val cmdName: String = CMD.getClass.getName.toLowerCase
   override def execute(s: CommandSender, args: Array[String]): Boolean = {
     var placeholders: Map[String, String] = Map(
       "lang" -> clientLang(s.getName)
@@ -24,7 +21,7 @@ object Lang extends CMD {
       placeholders = Map("lang" -> args(1))
       if (cLang.isPathPresent(args(1))) {
         if (args.length == 2) {
-          val permission: String = Permissions.get(args(0), cmdName, perm = "update.self")
+          val permission: String = cCommands.findPermission(args(0), className, perm = "update.self")
           if (s.hasPerm(permission)) {
             clientLang(s.getName) = args(1)
             s.sendMessage("commands.lang.updated.target", placeholders)
@@ -33,7 +30,7 @@ object Lang extends CMD {
             s.sendMessage("commands.no-perm", placeholders)
           }
         } else if (args.length == 3) {
-          val permission: String = Permissions.get(args(0), cmdName, perm = "update.others")
+          val permission: String = cCommands.findPermission(args(0), className, perm = "update.others")
           if (s.hasPerm(permission)) {
           val target = Bukkit.getPlayer(args(2))
           placeholders = placeholders.updated("target", args(2))

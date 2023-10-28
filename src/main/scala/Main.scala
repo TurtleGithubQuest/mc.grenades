@@ -21,7 +21,7 @@ import scala.collection.{immutable, mutable}
 import scala.util.Random
 
 object Main {
-  var debugMode = false
+  var debugMode: Integer = 1
   var pluginPrefix = "Grenade"
   var pluginSep = ":"
   var plugin: JavaPlugin = _

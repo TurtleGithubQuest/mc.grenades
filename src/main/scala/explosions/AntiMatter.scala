@@ -1,21 +1,22 @@
 package dev.turtle.grenades
 package explosions
 
-import explosions.base.GrenadeExplosion
+import enums.DropLocation
+import explosions.base.ExplosionType
 import utils.Blocks.ShrimpleBlock
 
 import org.bukkit.block.Block
+import org.bukkit.inventory.InventoryHolder
 import org.bukkit.{Location, Material, World}
 
-class AntiMatter extends GrenadeExplosion {
-  override def detonate(loc: Location, blocks: Array[Block]): Boolean = {
-    val world: World = blocks(0).getWorld
-    this.blockMap = blocks.map {
+class AntiMatter(di: Integer, dl: Array[DropLocation], ex: String) extends ExplosionType(di, dl, ex) {
+  override def filterBlocks(loc: Location, blocks: Array[Block], source:InventoryHolder=null): Array[ShrimpleBlock] = {
+    val world: World = loc.getWorld
+    blocks.map {
       block =>
         val finalY = loc.getY+(loc.getY - block.getY)
-        ShrimpleBlock(block, Material.AIR)
-        ShrimpleBlock(world.getBlockAt(block.getX, finalY.toInt, block.getZ), block.getType)
+        ShrimpleBlock(block, Material.AIR, dropItems, dropLocations, source)
+        ShrimpleBlock(world.getBlockAt(block.getX, finalY.toInt, block.getZ), block.getType, dropItems, dropLocations, source)
     }
-    true
   }
 }

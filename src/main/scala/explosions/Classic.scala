@@ -1,20 +1,19 @@
 package dev.turtle.grenades
 package explosions
 
-import explosions.base.GrenadeExplosion
+import enums.DropLocation
+import explosions.base.ExplosionType
 import utils.Blocks.ShrimpleBlock
 
 import org.bukkit.block.Block
+import org.bukkit.inventory.InventoryHolder
 import org.bukkit.{Location, Material}
 
-class Classic extends GrenadeExplosion {
-  override def detonate(loc: Location, blocks: Array[Block]): Boolean = {
-    this.blockMap = blocks.map {
+class Classic(di: Integer, dl: Array[DropLocation], ex: String) extends ExplosionType(di, dl, ex) {
+  override def filterBlocks(loc: Location, blocks: Array[Block], source:InventoryHolder=null): Array[ShrimpleBlock] = {
+    blocks.map {
       block =>
-        if (this.dropItems > 0)
-          this.droppedItems.add(block.getDrops)
-        ShrimpleBlock(block, Material.AIR)
+        ShrimpleBlock(block, Material.AIR, dropItems, dropLocations, source)
     }
-    true
   }
 }

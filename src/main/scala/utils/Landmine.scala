@@ -1,9 +1,10 @@
 package dev.turtle.grenades
 package utils
 
-import utils.Conf.{getFolderRelativeToPlugin, grenades, landmines, reloadConfigsInFolder}
+import utils.Conf.{grenades, landmines, reloadConfigsInFolder}
+import utils.extras.ExtraConfig
 
-import com.typesafe.config.ConfigValueFactory
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import org.bukkit.{Bukkit, Chunk, Location}
 
 import scala.collection.immutable
@@ -24,10 +25,8 @@ object Landmine {
             val grenade_id = cWorld.getString(s"$landmineCoords.grenade_id")
             val grenade_owner = cWorld.getString(s"$landmineCoords.owner")
             val grenade = grenades(grenade_id)
-            val detonationSucceed = grenade.spawn(loc, org.bukkit.util.Vector(0, 0, 0), Bukkit.getPlayer(grenade_owner))
-            if (detonationSucceed) {
-              Landmine.saveAndReloadAll(worldName, immutable.Map(landmineCoords -> ""))
-            }
+            Landmine.saveAndReloadAll(worldName, immutable.Map(landmineCoords -> ""))
+            grenade.explosion.spawnAt(loc, source=Bukkit.getPlayer(grenade_owner))
           }
           isPresent = true
         }
@@ -41,12 +40,12 @@ object Landmine {
     val updatedWorldConfig = keysAndValues.foldLeft(landmines.getConfig(worldName)) {
       case (config, (key, value)) if value.isEmpty =>
         config.withoutPath(key)
-
       case (config, (key, value)) =>
         config.withValue(key, ConfigValueFactory.fromAnyRef(value))
     }
-    Conf.save(updatedWorldConfig, s"$landmines/$worldName.json")
-    reloadConfigsInFolder(folderPath = "landmines")
+    updatedWorldConfig.save(path=s"data/landmines/$worldName.json")
+    landmines = ConfigFactory.empty()
+    reloadConfigsInFolder(folderPath = "data/landmines")
     true
   }
 

@@ -2,26 +2,26 @@ package dev.turtle.grenades
 package utils
 
 import Main.*
+import command.base.CMD
+import enums.DropLocation
+import explosions.base.ExplosionType
+import utils.Exceptions.*
+import utils.extras.ExtraConfig
+import utils.lang.Message.{debugMessage, defaultLang, reloadClientLangs}
+import utils.parts.{Explosion, Particle, Sound}
 
-import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions, ConfigValueFactory}
-import Conf.*
-import utils.parts.{Explosion, gParticle, gSound}
-import explosions.{AntiMatter, Classic, Replace, Prototype}
-import utils.lang.Message.{clientLang, debugMessage, defaultLang, reloadClientLangs}
-
-import dev.turtle.grenades.explosions.base.GrenadeExplosion
-import org.bukkit.{Bukkit, ChatColor}
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.bukkit.Bukkit.getLogger
+import org.bukkit.{Bukkit, ChatColor}
 
 import java.awt.Color
-import java.io.{BufferedWriter, File, FileWriter, IOException, InputStream}
+import java.io.*
 import java.nio.file.{Files, StandardCopyOption}
 import java.text.DecimalFormat
 import java.util
+import java.util.List as JavaList
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
-import java.util.List as JavaList
-import scala.util.{Success, Try}
 
 object Conf {
   var cGrenades: Config = ConfigFactory.empty()
@@ -29,6 +29,7 @@ object Conf {
   var cParticles: Config = ConfigFactory.empty()
   var cSounds: Config = ConfigFactory.empty()
   var cConfig: Config = ConfigFactory.empty()
+  var cCommands: Config = ConfigFactory.empty()
   var cLang: Config = ConfigFactory.empty()
   var cRecipes: Config = ConfigFactory.empty() //TODO: Reimplement this
   var landmines: Config = ConfigFactory.empty()
@@ -105,7 +106,7 @@ object Conf {
             val fileName = file.getName.split("\\.")(0)
             val updatedFileConfig = fileConfig.withValue({if (toLowerCase) fileName.toLowerCase else fileName}, fileConfig.root())
             folderPath match
-              case "landmines"  =>
+              case "data/landmines"  =>
                 landmines = landmines.withFallback(updatedFileConfig).resolve()
               case "lang" =>
                 cLang = cLang.withFallback(updatedFileConfig).resolve()
@@ -136,85 +137,89 @@ object Conf {
       cGrenades = this.get("grenades").withFallback(this.get("grenades", true))
       for (keyName <- cGrenades.root().keySet().asScala.toSet) {
         val grenadeCategory: Config = cGrenades.getConfig(keyName)
-        def getGrenadeInfo(path: String): String = {
-          grenadeCategory.getString(s"$path")
-        }
-        def getExplosionInfo(path: String): String = {
-          cExplosions.getString(s"${getGrenadeInfo("explosion")}.$path")
-        }
-        def getParticleInfo(path: String): String = {
-          cParticles.getString(s"${getGrenadeInfo("particles")}.$path")
-        }
-        def getParticleInfoExplosion(path: String): String = {
-          cParticles.getString(s"${getExplosionInfo("particles")}.$path")
-        }
-        def getSoundInfo(path: String): String = {
-          cSounds.getString(s"${getExplosionInfo("sound")}.$path")
-        }
-        val hexColor = getParticleInfo("color")
-        val decodedColor = Color.decode(hexColor)
+        try {
+          def getGrenadeInfo(path: String): String = {
+            grenadeCategory.findString(s"$path")
+          }
 
-        grenades.put(keyName,
-          new Grenade(
-            id = keyName,
-            displayName = getGrenadeInfo("item.display-name"),
-            lore = getLore(keyName),
-            explosion = new Explosion(
-              name = s"dev.turtle.grenades.explosions.${explosionTypes(getExplosionInfo("name").toUpperCase)}",
-              particles = new gParticle(
-                name = getParticleInfoExplosion("name").toUpperCase,
-                amount = getParticleInfoExplosion("amount").toInt,
-                size = getParticleInfoExplosion("size").toInt,
+          def getExplosionInfo(path: String): String = {
+            cExplosions.findString(s"${getGrenadeInfo("explosion")}.$path")
+          }
+
+          def getParticleInfo(path: String): String = {
+            cParticles.findString(s"${getGrenadeInfo("particles")}.$path")
+          }
+
+          def getParticleInfoExplosion(path: String): String = {
+            cParticles.findString(s"${getExplosionInfo("particles")}.$path")
+          }
+
+          def getSoundInfo(path: String): String = {
+            cSounds.findString(s"${getExplosionInfo("sound")}.$path")
+          }
+
+          val hexColor = getParticleInfo("color")
+          val decodedColor = Color.decode(hexColor)
+
+          grenades.put(keyName,
+            new Grenade(
+              id = keyName,
+              displayName = getGrenadeInfo("item.display-name"),
+              lore = getLore(keyName),
+              explosion = Explosion(
+                explosionType = ExplosionType.fromClass(
+                  s"dev.turtle.grenades.explosions.${explosionTypes(getExplosionInfo("name").toUpperCase)}",
+                  dropItems = getExplosionInfo("drop-items").toInt,
+                  dropLocations = cExplosions.findStringList(s"${getGrenadeInfo("explosion")}.drop-locations").toArray(Array.empty[String]).map { str =>
+                    val enumValue = DropLocation.values.find(_.toString == str)
+                    enumValue.getOrElse(throw ConfigValueNotFoundException(s"Invalid DropLocation: $str", 150))
+                  },
+                  extra= getExplosionInfo("extra")
+                ),
+                particles = Particle(
+                  name = getParticleInfoExplosion("name").toUpperCase,
+                  amount = getParticleInfoExplosion("amount").toInt,
+                  size = getParticleInfoExplosion("size").toFloat,
+                  colorHEX = hexColor,
+                  color = org.bukkit.Color.fromRGB(decodedColor.getRed, decodedColor.getGreen, decodedColor.getBlue),
+                  colorFade = org.bukkit.Color.fromRGB(decodedColor.getRed, decodedColor.getGreen, decodedColor.getBlue)
+                ),
+                power = getExplosionInfo("power").toInt,
+                damage = getExplosionInfo("damage").toDouble,
+                shape=getExplosionInfo("shape").toUpperCase,
+                sound = Sound(
+                  name = getSoundInfo("name").toLowerCase.replaceAll("_", "."),
+                  volume = getSoundInfo("volume").toFloat,
+                  pitch = getSoundInfo("pitch").toFloat
+                )
+              ),
+              isLandmine = getGrenadeInfo("is-landmine").toBoolean,
+              trail = Particle(
+                name = getParticleInfo("name").toUpperCase,
+                amount = getParticleInfo("amount").toInt,
+                size = getParticleInfo("size").toInt,
                 colorHEX = hexColor,
                 color = org.bukkit.Color.fromRGB(decodedColor.getRed, decodedColor.getGreen, decodedColor.getBlue),
                 colorFade = org.bukkit.Color.fromRGB(decodedColor.getRed, decodedColor.getGreen, decodedColor.getBlue)
               ),
-              power = getExplosionInfo("power").toInt,
-              damage = getExplosionInfo("damage").toDouble,
-              dropItems = getExplosionInfo("drop-items").toInt,
-              shape = getExplosionInfo("shape").toUpperCase,
-              sound = new gSound(
-                name = getSoundInfo("name").toLowerCase.replaceAll("_", "."),
-                volume = getSoundInfo("volume").toFloat,
-                pitch = getSoundInfo("pitch").toFloat
-              ),
-              extra = getExplosionInfo("extra")
-            ),
-            isLandmine = getGrenadeInfo("is-landmine").toBoolean,
-            trail = new gParticle(
-              name = getParticleInfo("name").toUpperCase,
-              amount = getParticleInfo("amount").toInt,
-              size = getParticleInfo("size").toInt,
-              colorHEX = hexColor,
-              color = org.bukkit.Color.fromRGB(decodedColor.getRed, decodedColor.getGreen, decodedColor.getBlue),
-              colorFade = org.bukkit.Color.fromRGB(decodedColor.getRed, decodedColor.getGreen, decodedColor.getBlue)
-            ),
-            material = org.bukkit.Material.valueOf(getGrenadeInfo("item.material").toUpperCase),
-            glow = getGrenadeInfo("entity.glow").toBoolean,
-            model = getGrenadeInfo("entity.model").toUpperCase,
-            customNameVisible = getGrenadeInfo("entity.custom-name.visible").toBoolean,
-            customName = ChatColor.translateAlternateColorCodes('&',
-                        getGrenadeInfo("entity.custom-name.value")),
-            fuseTime = getGrenadeInfo("entity.fuse").toInt,
-            velocity = getGrenadeInfo("entity.velocity").toDouble,
-            customModelData = getGrenadeInfo("custom-model-data").toInt
-        ))
+              material = org.bukkit.Material.valueOf(getGrenadeInfo("item.material").toUpperCase),
+              glow = getGrenadeInfo("entity.glow").toBoolean,
+              model = getGrenadeInfo("entity.model").toUpperCase,
+              customNameVisible = getGrenadeInfo("entity.custom-name.visible").toBoolean,
+              customName = ChatColor.translateAlternateColorCodes('&',
+                getGrenadeInfo("entity.custom-name.value")),
+              fuseTime = getGrenadeInfo("entity.fuse").toInt,
+              velocity = getGrenadeInfo("entity.velocity").toDouble,
+              customModelData = getGrenadeInfo("custom-model-data").toInt
+            ))
+        } catch {
+          case e: ConfigValueNotFoundException =>
+            debugMessage(s"&cCouldn't load &4$keyName&c, ${e.message}", debugLevel=e.debugLevel)
+        }
       }
       true
     }
-    def save(config: Config, path: String=""): Boolean = {
-      val file = new File(getFolderRelativeToPlugin(path))
-      try {
-        val writer = new BufferedWriter(new FileWriter(file))
-        writer.write(config.root().render(ConfigRenderOptions.concise()))
-        writer.close()
-      } catch {
-        case e: Exception =>
-          debugMessage(s"&cError saving '${file.getName}' to path: ${e.getMessage}", Map())
-          return false
-      }
-      true
-    }
+
     def setValue(config: Config, path: String, value: String): Config = {
       config.withValue(path, ConfigValueFactory.fromAnyRef(value))
     }
@@ -226,13 +231,14 @@ object Conf {
       cParticles = this.get("particles").withFallback(this.get("particles", true))
       cSounds = this.get("sounds").withFallback(this.get("sounds", true))
       decimalFormat = new DecimalFormat(cConfig.getString("general.decimal-format"))
-      debugMode = cConfig.getBoolean("general.debug")
+      debugMode = cConfig.getInt("general.debug")
       pluginPrefix = cConfig.getString("general.plugin.name")
       pluginSep = cConfig.getString("general.plugin.sep")
       reloadGrenades()
-      reloadConfigsInFolder(folderPath="landmines")
+      reloadConfigsInFolder(folderPath="data/landmines")
       reloadClientLangs()
       Blocks.reloadVariables(newInterval=cConfig.getLong("general.block-queue.interval"), newMaxBlocksPerLoop=cConfig.getInt("general.block-queue.max-blocks-per-loop"))
+      CMD.reload()
       true
     }
     def getLore(grenadeName: String): java.util.ArrayList[String] = {
@@ -267,14 +273,4 @@ object Conf {
       lore = lore.asScala.map(_.replaceAll("&", "§")).asJava
       java.util.ArrayList(lore)
     }
-
-  implicit class gConfig(config: Config) {
-    def isPathPresent(path: String): Boolean = {
-      Try(config.hasPath(path)) match {
-        case Success(true) => true
-        case _ =>
-          false
-      }
-    }
-  }
 }
