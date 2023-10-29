@@ -12,7 +12,7 @@ import org.bukkit.block.Block
 import org.bukkit.inventory.InventoryHolder
 import org.bukkit.{Location, Material}
 
-class Replace(di: Integer, dl: Array[DropLocation], ex: String) extends ExplosionType(di, dl, ex) {
+class Replace(dropItems: Integer, dropLocations: Array[DropLocation], extra: String) extends ExplosionType {
   override def filterBlocks(loc: Location, blocks: Array[Block], source:InventoryHolder=null): Array[ShrimpleBlock] = {
     val material: Material = Material.valueOf(extra.toUpperCase)
     val cReplacers: Config = cConfig.getOrElse(s"explosion-type.replace.$extra", "explosion-type.replace.default") /*cConfig.getConfig(s"explosion-type.replace.$params").withFallback(cConfig.getConfig("explosion-type.replace.default"))*/

@@ -1,16 +1,17 @@
 package dev.turtle.grenades
-package events.bukkit
+package listeners.bukkit
 
-import utils.extras.{ExtraCommandSender, ExtraListener}
-import utils.lang.Message.clientLang
+import listeners.base.ExtraListener
 import utils.Conf.cLang
+import utils.extras.ExtraCommandSender
+import utils.lang.Message.clientLang
 
 import org.bukkit.event.player.PlayerJoinEvent
 import org.bukkit.event.{EventHandler, EventPriority}
 
 import scala.collection.immutable
 
-class AutoLangOnJoin(override val configurationPath: String) extends ExtraListener(configurationPath), ExtraCommandSender {
+class AutoLangOnJoin extends ExtraListener, ExtraCommandSender {
   @EventHandler(priority = EventPriority.LOWEST)
   private def onJoin(e: PlayerJoinEvent): Unit = {
     if (!clientLang.contains(e.playerName)) {

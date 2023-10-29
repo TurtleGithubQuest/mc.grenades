@@ -35,7 +35,8 @@ object CMD extends TabExecutor, ExtraCommandSender {
     "give" -> command.Give,
     "reload" -> command.Reload,
     "lang" -> command.Lang,
-    "summon" -> command.Summon
+    "summon" -> command.Summon,
+    "container" -> command.Container
   )
 
   def reload(): Unit = {

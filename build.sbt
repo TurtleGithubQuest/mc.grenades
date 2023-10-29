@@ -5,12 +5,13 @@ ThisBuild / scalaVersion := "3.3.1"
 lazy val root = (project in file("."))
   .settings(
     name := "Grenades_scala",
+    sourceDirectory := file("./src/"),
     idePackagePrefix.withRank(KeyRanks.Invisible) := Some("dev.turtle.grenades"),
     assembly / mainClass := Some("dev.turtle.grenades.Main"),
     assembly / assemblyOutputPath := file(s"S:\\mc_server\\plugins\\${name.value}.jar"),
     ThisBuild / assemblyShadeRules := Seq(
       ShadeRule.rename("de.tr7zw.**" -> "dev.turtle.shaded.nbtapi.@1").inAll
-    )
+    ),
   )
 resolvers ++= Seq(
   "Spigot Snapshots" at "https://hub.spigotmc.org/nexus/content/repositories/snapshots",

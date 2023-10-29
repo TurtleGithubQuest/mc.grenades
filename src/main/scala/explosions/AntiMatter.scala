@@ -9,7 +9,7 @@ import org.bukkit.block.Block
 import org.bukkit.inventory.InventoryHolder
 import org.bukkit.{Location, Material, World}
 
-class AntiMatter(di: Integer, dl: Array[DropLocation], ex: String) extends ExplosionType(di, dl, ex) {
+class AntiMatter(dropItems: Integer, dropLocations: Array[DropLocation], ex: String) extends ExplosionType {
   override def filterBlocks(loc: Location, blocks: Array[Block], source:InventoryHolder=null): Array[ShrimpleBlock] = {
     val world: World = loc.getWorld
     blocks.map {

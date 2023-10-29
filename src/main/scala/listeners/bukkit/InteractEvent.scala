@@ -1,15 +1,16 @@
 package dev.turtle.grenades
-package events.bukkit
+package listeners.bukkit
 
 import Main.{cooldown, decimalFormat}
 import utils.Blocks.canDestroyThatBlock
-import utils.Conf.*
+import utils.Conf._
 import utils.Landmine.coordsFromLoc
-import utils.extras.{ExtraCommandSender, ExtraListener}
+import utils.extras.ExtraCommandSender
 import utils.{Conf, Grenade, Landmine}
 
 import com.typesafe.config.ConfigValueFactory
 import de.tr7zw.changeme.nbtapi.NBTItem
+import dev.turtle.grenades.listeners.base.ExtraListener
 import net.md_5.bungee.api.ChatMessageType
 import org.bukkit.Material
 import org.bukkit.block.Block

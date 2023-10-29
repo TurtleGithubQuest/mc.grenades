@@ -28,7 +28,7 @@ object Summon extends CMD{
         if (grenades.contains(args(1))) {
           val detonationLoc: Location = {
             if (args(2).isDouble) {
-              if (args.length >= 5)
+              if (args.length > 5)
                 new Location(Bukkit.getWorld(args(5)), args(2).toDouble, args(3).toDouble, args(4).toDouble)
               else
                 null
@@ -41,7 +41,7 @@ object Summon extends CMD{
                 null
             }
           }
-          if (detonationLoc ne null) {
+          if ((detonationLoc ne null) && (detonationLoc.getWorld ne null)) {
             val amountToSpawn: Integer = args.getInt("amount:", 1).clamp(minVal = 1)
             val detonateInstantly: Boolean = args.getBoolean("detonate:", false)
             for (_ <- 1 to amountToSpawn) {

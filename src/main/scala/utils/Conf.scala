@@ -31,6 +31,7 @@ object Conf {
   var cConfig: Config = ConfigFactory.empty()
   var cCommands: Config = ConfigFactory.empty()
   var cLang: Config = ConfigFactory.empty()
+  var cContainer: Config = ConfigFactory.empty()
   var cRecipes: Config = ConfigFactory.empty() //TODO: Reimplement this
   var landmines: Config = ConfigFactory.empty()
 
@@ -219,7 +220,6 @@ object Conf {
       }
       true
     }
-
     def setValue(config: Config, path: String, value: String): Config = {
       config.withValue(path, ConfigValueFactory.fromAnyRef(value))
     }
@@ -230,6 +230,7 @@ object Conf {
       cExplosions = this.get("explosions").withFallback(this.get("explosions", true))
       cParticles = this.get("particles").withFallback(this.get("particles", true))
       cSounds = this.get("sounds").withFallback(this.get("sounds", true))
+      cContainer = this.get("container").withFallback(this.get("container", true))
       decimalFormat = new DecimalFormat(cConfig.getString("general.decimal-format"))
       debugMode = cConfig.getInt("general.debug")
       pluginPrefix = cConfig.getString("general.plugin.name")

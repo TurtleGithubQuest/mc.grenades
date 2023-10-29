@@ -1,17 +1,17 @@
 package dev.turtle.grenades
-package events.bukkit
+package listeners.bukkit
 
 import utils.Conf.cConfig
 import utils.{Conf, Landmine}
+import dev.turtle.grenades.listeners.base.ExtraListener
 
-import dev.turtle.grenades.utils.extras.ExtraListener
 import org.bukkit.block.Block
 import org.bukkit.event.block.Action
 import org.bukkit.event.entity.{EntityExplodeEvent, EntityInteractEvent}
 import org.bukkit.event.player.PlayerInteractEvent
-import org.bukkit.event.{EventHandler, EventPriority, Listener}
+import org.bukkit.event.{EventHandler, EventPriority}
 
-class LandmineEvents(override val configurationPath: String) extends ExtraListener(configurationPath) {
+class LandmineEvents extends ExtraListener {
   @EventHandler(priority = EventPriority.HIGH)
   private def entityInteractEvent(e: EntityInteractEvent): Unit = {
     if (e.isCancelled) {return}

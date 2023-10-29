@@ -12,12 +12,12 @@ import org.bukkit.inventory.InventoryHolder
 import java.lang.Class.forName
 import scala.jdk.CollectionConverters.*
 
-abstract case class ExplosionType(
+trait ExplosionType/*(
                                    dropItems: Integer,
                                    dropLocations: Array[DropLocation],
                                    extra: String
-                                 ) {
-  def name: String=super.getClass.getSimpleName.toLowerCase.replaceAll("\\$", "")
+                                 )*/ {
+  def className: String=super.getClass.getSimpleName.toLowerCase.replaceAll("\\$", "")
   def filterBlocks(loc: Location, blocks: Array[Block], source: InventoryHolder=null): Array[ShrimpleBlock]
 }
 object ExplosionType {

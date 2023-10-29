@@ -2,16 +2,15 @@ package dev.turtle.grenades
 
 import Main.*
 import command.base.CMD
-import events.bukkit.{InteractEvent, LandmineEvents}
+import container.Editor
+import container.base.ContainerHolder
+import listeners.base.ExtraListener.registerAllEvents
+import utils.Conf
 import utils.Conf.*
-import utils.extras.Listener
 import utils.lang.Message.debugMessage
-import utils.optimized.OnlinePlayers
-import utils.{Blocks, Conf}
 
 import de.tr7zw.changeme.nbtapi.NBTItem
 import net.coreprotect.CoreProtectAPI
-import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
 
@@ -37,9 +36,12 @@ class Main extends JavaPlugin {
   override def onEnable(): Unit = {
     plugin = this
     random = new Random
+    /*var te: Array[ContainerHolder] = Array(new Editor("ed1", 5), new Editor("ed2", 5))
+    for (t <- te)
+      getLogger.info(t.className)*/
     Conf.reload()
     getCommand("grenade").setExecutor(CMD)
-    Listener.registerAllEvents
+    registerAllEvents
     hookPlugins
   }
 
