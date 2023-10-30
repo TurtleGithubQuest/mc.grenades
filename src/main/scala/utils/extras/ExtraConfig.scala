@@ -3,11 +3,11 @@ package utils.extras
 
 import container.base.{ContainerSlot, Item}
 import enums.SlotAction
-import utils.Conf.getFolderRelativeToPlugin
-import utils.Exceptions.{ConfigContainerSlotNotValidException, ConfigPathNotFoundException, ConfigValueNotFoundException, ConfigNotFoundException}
+import utils.Conf.{cContainerSlots, getFolderRelativeToPlugin}
+import utils.Exceptions.{ConfigContainerSlotNotValidException, ConfigNotFoundException, ConfigPathNotFoundException, ConfigValueNotFoundException}
 import utils.lang.Message.debugMessage
 
-import com.typesafe.config.{Config, ConfigRenderOptions}
+import com.typesafe.config.{Config, ConfigFactory, ConfigList, ConfigObject, ConfigRenderOptions, ConfigValue, ConfigValueType}
 import org.bukkit.Material
 
 import java.io.{BufferedWriter, File, FileWriter}
@@ -27,6 +27,14 @@ implicit class ExtraConfig(config: Config) {
     }
   }
 
+  def findValue(path: String): Option[ConfigValue] = {
+    if (config.isPathPresent(path)) {
+      Some(config.getValue(path))
+    } else {
+      None
+    }
+  }
+
   def getOrElse(path: String, elsePath: String): Config = {
     {
       if (config.isPathPresent(path))
@@ -38,16 +46,16 @@ implicit class ExtraConfig(config: Config) {
     }
   }
 
-  def findString(path: String, default: String=null): String = {
+  def findString(path: String, default: Option[Any]=null): String = {
     if (config.isPathPresent(path))
       config.getString(path)
-    else if (default ne null)
-      default
+    else if ((default ne null) && default.isDefined)
+      default.get.toString
     else
       throw ConfigValueNotFoundException(s"[${this.name}] Value not found: $path", 150)
   }
 
-  def findInt(path: String, default: Integer=null): Integer = findString(path, default={if(default ne null) default.toString else null}).toInt
+  def findInt(path: String, default: Option[Integer]=null): Integer = findString(path, default=default/*{if(default ne null) default.toString else null}*/).toInt
 
   def findBoolean(path: String): Boolean = findString(path).toBoolean
 
@@ -95,23 +103,55 @@ implicit class ExtraConfig(config: Config) {
     true
   }
 
+  def unwrappedValue(value: ConfigValue): Any = value match {
+    case list: ConfigList => list.asScala.map(cv => unwrappedValue(cv))
+    case obj: ConfigObject => obj.toConfig.toMap
+    case value => value.unwrapped()
+  }
+  def toMap: Map[String, Any] = {
+    config
+      .entrySet()
+      .asScala
+      .map { entry =>
+        entry.getKey -> unwrappedValue(entry.getValue)
+      }
+      .toMap
+  }
   /**
    * path should be something like (container).(category).content.(slotNumber)
    */
   def findContainerSlot(path: String): ContainerSlot = {
     if (config.isPathPresent(path)) {
       val slotConfig: Config = config.getConfig(path)
+      val slotActions = slotConfig.getList("slotAction").asScala.foldLeft(immutable.Map.empty[SlotAction, immutable.Map[String, Any]]) {
+        (map, slotActionVal) =>
+          try {
+            val slotActionConfig = {
+              if ((slotActionVal ne null) && (slotActionVal.valueType == ConfigValueType.STRING))
+                cContainerSlots.getConfig(slotActionVal.unwrapped.toString)
+              else
+                ConfigFactory.parseString(slotActionVal.unwrapped.toString)
+            }
+            val slotActionType = slotActionConfig.findString("type")
+            val enumValue = SlotAction.values.find(_.toString == slotActionType)
+            val slotAction: SlotAction = enumValue.getOrElse(throw ConfigValueNotFoundException(s"Invalid SlotAction: $slotActionType", 150))
+            map.updated(slotAction, {
+              slotActionConfig.findValue("metadata") match {
+                case Some(metadata: ConfigObject) => metadata.toConfig.toMap
+                case _ => immutable.Map.empty
+              }
+            })
+          } catch {
+            case e: Exception =>
+              throw ConfigContainerSlotNotValidException(s"[${this.name}] ContainerSlot not valid: $path // ${e.getMessage}", 155)
+          }
+      }
       try {
-        val slotActionType = slotConfig.getString("slotAction.type")
-        val enumValue = SlotAction.values.find(_.toString == slotActionType)
-        val slotAction: SlotAction = enumValue.getOrElse(throw ConfigValueNotFoundException(s"Invalid SlotAction: $slotActionType", 150))
-        val metadata = slotConfig.findString("metadata", default="")
-        val inquire = slotConfig.findString("slotAction.inquire", default="")
         val item: Item = Item(
           Material.valueOf(slotConfig.findString("material").toUpperCase))
           .amount(slotConfig.findInt("amount"))
           .displayName(slotConfig.findString("displayName"))
-        ContainerSlot(slotAction=slotAction, value=slotConfig.findString("slotAction.value"), metadata=metadata, inquire=inquire, item=item)
+        ContainerSlot(slotActions=slotActions, item=item)
       } catch {
         case e: Exception =>
           throw ConfigContainerSlotNotValidException(s"[${this.name}] ContainerSlot not valid: $path // ${e.getMessage}", 155)

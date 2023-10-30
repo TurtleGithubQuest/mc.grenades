@@ -10,11 +10,13 @@ import org.bukkit.Material
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.inventory.{Inventory, InventoryHolder, ItemStack}
 
-import scala.collection.mutable
+import scala.collection.immutable.Map
+import scala.collection.{immutable, mutable}
 import scala.collection.mutable.Map
 trait ContainerHolder extends InventoryHolder{
   def className: String=super.getClass.getSimpleName.toLowerCase.replaceAll("\\$", "")
   def classConfig: Config=cContainer.getConfig(className)
+  def name: String
   def title: String
   def size: Integer
   def path: String
@@ -43,4 +45,4 @@ case class Item(material: Material) {
 /*object Item {
   def apply(material: Material): Item = new Item(material)
 }*/
-case class ContainerSlot(slotAction: SlotAction, value: Any, metadata: Any, inquire: Any, item: Item)
+case class ContainerSlot(slotActions: immutable.Map[SlotAction, immutable.Map[String, Any]], item: Item)

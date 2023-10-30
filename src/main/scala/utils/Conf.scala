@@ -32,6 +32,7 @@ object Conf {
   var cCommands: Config = ConfigFactory.empty()
   var cLang: Config = ConfigFactory.empty()
   var cContainer: Config = ConfigFactory.empty()
+  var cContainerSlots: Config = ConfigFactory.empty()
   var cRecipes: Config = ConfigFactory.empty() //TODO: Reimplement this
   var landmines: Config = ConfigFactory.empty()
 
@@ -90,7 +91,7 @@ object Conf {
             }
           }
         } else {
-          getLogger.info(s"Resource $configName not found!") //TODO: Implement debugger
+          debugMessage(s"Resource $configName not found!", debugLevel=200) //TODO: Implement debugger
         }
         ConfigFactory.empty()
       } else {
@@ -111,14 +112,22 @@ object Conf {
                 landmines = landmines.withFallback(updatedFileConfig).resolve()
               case "lang" =>
                 cLang = cLang.withFallback(updatedFileConfig).resolve()
+              case "container/containers" =>
+                cContainer = cContainer.withFallback(updatedFileConfig).resolve()
+              case "container/slots" =>
+                cContainerSlots = cContainerSlots.withFallback(fileConfig).resolve()
               case _ =>
                 debugMessage(s"&cAttempted to load unknown config: $folderPath", Map())
           }
         }
       } else {
-        folderPath match
+        folderPath match //Load default values
           case "lang" =>
             cLang = cLang.withValue("en_us", this.get(configName = "lang/en_US").root())
+          case "container/containers" =>
+            cContainer = cContainer.withValue("editor", this.get(configName = "container/containers/editor").root())
+          case "container/slots" =>
+            cContainerSlots = cContainerSlots.withValue("slots", this.get(configName = "container/slots/exampleslots").root())
           case _ =>
             {}
       }
@@ -230,13 +239,14 @@ object Conf {
       cExplosions = this.get("explosions").withFallback(this.get("explosions", true))
       cParticles = this.get("particles").withFallback(this.get("particles", true))
       cSounds = this.get("sounds").withFallback(this.get("sounds", true))
-      cContainer = this.get("container").withFallback(this.get("container", true))
       decimalFormat = new DecimalFormat(cConfig.getString("general.decimal-format"))
       debugMode = cConfig.getInt("general.debug")
       pluginPrefix = cConfig.getString("general.plugin.name")
       pluginSep = cConfig.getString("general.plugin.sep")
       reloadGrenades()
       reloadConfigsInFolder(folderPath="data/landmines")
+      reloadConfigsInFolder(folderPath="container/containers", fileType=".conf", toLowerCase=true)
+      reloadConfigsInFolder(folderPath="container/slots", fileType=".conf", toLowerCase=true)
       reloadClientLangs()
       Blocks.reloadVariables(newInterval=cConfig.getLong("general.block-queue.interval"), newMaxBlocksPerLoop=cConfig.getInt("general.block-queue.max-blocks-per-loop"))
       CMD.reload()

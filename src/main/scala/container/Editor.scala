@@ -8,7 +8,7 @@ import enums.SlotAction.{Inquire, OpenContainer}
 import events.ContainerClickEvent
 
 import com.typesafe.config.Config
-import dev.turtle.grenades.utils.Conf.{cContainer, cGrenades}
+import dev.turtle.grenades.utils.Conf.{cContainer, cExplosions, cGrenades, grenades}
 import org.bukkit.{Bukkit, Material}
 import org.bukkit.entity.HumanEntity
 import org.bukkit.inventory.Inventory
@@ -18,6 +18,7 @@ import scala.collection.immutable
 class Editor(var title: String, var size: Integer, var path: String="main") extends ContainerHolder {
   override val inventory: Inventory = Bukkit.createInventory(this, size, title)
   override def getInventory: Inventory = inventory
+  override val name = "editor"
   private var content: immutable.Map[Int, ContainerSlot] = immutable.Map().empty
   refreshContents
   def refreshContents: Boolean = {
@@ -32,44 +33,40 @@ class Editor(var title: String, var size: Integer, var path: String="main") exte
     e.setCancelled(true)
     val containerSlot: ContainerSlot = content.getOrElse(e.getSlot, null)
     if (containerSlot ne null) {
-      val slotAction: SlotAction = containerSlot.slotAction
-      slotAction match {
-        case OpenContainer =>
-          openContainer(e.getWhoClicked, containerSlot.value.toString)
-        case Inquire =>
-          inquire(containerSlot.value.toString, containerSlot.metadata.toString, containerSlot.inquire.toString)
+      for ((slotAction, metadata) <- containerSlot.slotActions)
+      {
+        slotAction match {
+          case OpenContainer =>
+            openContainer(e.getWhoClicked, metadata)
+          case Inquire =>
+            inquire(metadata, e.getSlot)
+        }
       }
     }
     this.getInventory
   }
-  private def inquire(value: String, metadata: String, inquireData: String): Unit = {
-    val valueSplit = inquireData.split("\\|")
-    val inquireMap = valueSplit.foldLeft(immutable.Map.empty[String, String]) {
-      (map, pair) =>
-        val keyValue = pair.split(":")
-        if (keyValue.length > 1) {
-          val key = keyValue(0).trim
-          val value = keyValue(1).trim
-          map.updated(key, value)
-        } else {
-          map
-        }
-    }
-    if (inquireMap.contains("config")) {
+
+  private def inquire(metadata: Map[String, Any], slot: Integer): Unit = {
+    if (metadata.contains("config.name")) {
+      var valuePath: String = metadata("config.path").toString
+      if (valuePath.contains("%slotname%"))
+        valuePath = valuePath.replaceAll("%slotname%", getSlotName(slot))
       val config: Config =
-        inquireMap("config") match
+        metadata("config.name").toString match
           case "grenades" =>
             cGrenades
-      val path: String = inquireMap("path").replaceAll("%metadata%", metadata)
+          case "explosions" =>
+            cExplosions
+      val found: String = config.findString(valuePath)
+      Bukkit.broadcastMessage(found)
     }
   }
-  private def openContainer(humanEntity: HumanEntity, value: String): Unit = {
-    val valueSplit = value.split("\\|")
-    val newContainer: String = valueSplit(0)
-    val desiredPath: String = valueSplit(1)
-    val newClassConfig = cContainer.getConfig(s"$newContainer.$desiredPath")
-    val newSize = newClassConfig.findInt("size", default=this.size)
-    val newTitle = newClassConfig.findString("title", default=path)
+  private def openContainer(humanEntity: HumanEntity, metadata: Map[String, Any]): Unit = {
+    val targetContainer: String = metadata("target").toString.replaceAll("%this%", this.name)
+    val desiredPath: String = metadata("path").toString
+    val newClassConfig = cContainer.getConfig(s"$targetContainer.$desiredPath")
+    val newSize = newClassConfig.findInt("size", default=Some(this.size))
+    val newTitle = newClassConfig.findString("title", default=Some(path))
     if (newSize ne this.size) {
       humanEntity.closeInventory()
       humanEntity.openInventory(new Editor(newTitle,newSize,desiredPath).inventory)
@@ -79,4 +76,5 @@ class Editor(var title: String, var size: Integer, var path: String="main") exte
       this.refreshContents
     }
   }
+  def getSlotName(slot: Integer): String = cContainer.findString(s"${this.name}.$path.content.$slot.metadata.slotname")
 }
