@@ -3,23 +3,21 @@ package container.base
 
 import enums.SlotAction
 import events.ContainerClickEvent
-import utils.Conf.cContainer
 
 import com.typesafe.config.Config
 import org.bukkit.Material
 import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.inventory.{Inventory, InventoryHolder, ItemStack}
 
+import java.util
 import scala.collection.immutable.Map
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.Map
 trait ContainerHolder extends InventoryHolder{
   def className: String=super.getClass.getSimpleName.toLowerCase.replaceAll("\\$", "")
-  def classConfig: Config=cContainer.getConfig(className)
   def name: String
   def title: String
   def size: Integer
-  def path: String
   //def content: mutable.Map[Integer, ItemStack]=Map()
   def onContainerClick(event: ContainerClickEvent): Unit
   def inventory: Inventory
@@ -37,6 +35,10 @@ case class Item(material: Material) {
     this
   }
 
+  def lore(lore: util.ArrayList[String]): this.type = {
+    itemMeta.setLore(lore)
+    this
+  }
   def build: ItemStack = {
     itemStack.setItemMeta(itemMeta)
     itemStack

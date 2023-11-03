@@ -3,7 +3,7 @@ package dev.turtle.grenades
 package command.base
 
 import command.Help
-import utils.Conf.{cCommands, cConfig}
+import utils.Conf.configs
 import utils.extras.{ExtraCommandSender, ExtraConfig}
 import utils.lang.Message.debugMessage
 
@@ -40,12 +40,12 @@ object CMD extends TabExecutor, ExtraCommandSender {
   )
 
   def reload(): Unit = {
-    cCommands = cConfig.getConfig("commands")
-    val section_Commands = cCommands.root().keySet().asScala
+    configs("commands") = configs("config").getConfig("commands")
+    val section_Commands = configs("commands").root().keySet().asScala
     var loadedAliases: Int = 0
     for (key <- section_Commands) {
       if (commandsClass.contains(key)) {
-        val section_Cmd = cCommands.getConfig(key)
+        val section_Cmd = configs("commands").getConfig(key)
         if (!section_Cmd.getBoolean("disable")) {
           commands.put(key, commandsClass(key))
         }
@@ -69,7 +69,7 @@ object CMD extends TabExecutor, ExtraCommandSender {
       val arg0: String = args(0).toLowerCase
       if (commands.contains(arg0)){
         val o_cmd: CMD = commands(arg0)
-        val permission: String = cCommands.findPermission(args(0), o_cmd.className)
+        val permission: String = configs("commands").findPermission(args(0), o_cmd.className)
         if (s.hasPerm(permission)) {
           val result: Boolean = o_cmd.execute(s, args)
           result

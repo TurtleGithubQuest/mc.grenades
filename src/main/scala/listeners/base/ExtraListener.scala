@@ -3,7 +3,7 @@ package listeners.base
 
 import Main.plugin
 import listeners.bukkit.*
-import utils.Conf.cConfig
+import utils.Conf.configs
 import utils.extras.ExtraConfig
 import utils.optimized.OnlinePlayers
 
@@ -33,7 +33,7 @@ object ExtraListener {
   )
   def registerAllEvents: Unit = {
     for (event <- events) {
-      val listenerEnabled: Try[Boolean] = Try(cConfig.findBoolean(s"listeners.${event.className}"))
+      val listenerEnabled: Try[Boolean] = Try(configs("config").findBoolean(s"listeners.${event.className}"))
       listenerEnabled match {
         case Success(false) => {}
         case _ =>

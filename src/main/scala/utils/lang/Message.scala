@@ -2,19 +2,20 @@ package dev.turtle.grenades
 package utils.lang
 
 import Main.{debugMode, pluginPrefix, pluginSep}
-import utils.Conf.{cConfig, getFolderRelativeToPlugin}
-import utils.extras.{ExtraCommandSender,ExtraConfig}
+import utils.Conf.{configs, getFolderRelativeToPlugin}
+import utils.extras.{ExtraCommandSender, ExtraConfig}
 
 import com.typesafe.config.{ConfigException, ConfigFactory, ConfigValueFactory}
 import net.md_5.bungee.api.ChatMessageType
 import org.bukkit.Bukkit.getConsoleSender
+import org.bukkit.ChatColor
 
 import java.io.{File, FileNotFoundException}
 import scala.collection.{immutable, mutable}
 import scala.jdk.CollectionConverters.*
 
 object Message extends ExtraCommandSender {
-  val cMessaging = cConfig.getConfig("general.messaging")
+  val cMessaging = configs("config").getConfig("general.messaging")
   val defaultLang = cMessaging.getString("default.lang").toLowerCase
   val placeholderPrefix = cMessaging.getString("default.prefix.placeholder")
   val textPrefix = cMessaging.getString("default.prefix.text")
@@ -57,5 +58,24 @@ object Message extends ExtraCommandSender {
       case _: FileNotFoundException | _: ConfigException => mutable.Map().withDefault(k => defaultLang)
     }
     true
+  }
+
+  def getLocalizedText(language: String, path: String, placeholders: immutable.Map[String, String]=Map.empty): String = {
+    var text: String = {
+      try {
+        textPrefix + configs("lang").findString(s"$language.$path")
+      } catch {
+        case e: Throwable =>
+          path
+      }
+    }
+    if (placeholders.nonEmpty)
+      for ((key, value) <- placeholders) {
+        text = text.replace(s"%$key%", {
+          if (value.contains("&")) value
+          else placeholderPrefix + value
+        } + textPrefix)
+      }
+    ChatColor.translateAlternateColorCodes('&', text)
   }
 }

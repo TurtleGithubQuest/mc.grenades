@@ -12,7 +12,6 @@ class ContainerClick extends ExtraListener{
   @EventHandler(priority = EventPriority.HIGH)
   private def containerClick(e: ContainerClickEvent): Unit = {
     //if (e.getClickedInventory eq ContainerType)
-    Bukkit.broadcastMessage("container")
     e.getInventory.getHolder.asInstanceOf[ContainerHolder].onContainerClick(e)
   }
 }

@@ -1,7 +1,7 @@
 package dev.turtle.grenades
 package listeners.bukkit
 
-import utils.Conf.cConfig
+import utils.Conf.configs
 import utils.{Conf, Landmine}
 import dev.turtle.grenades.listeners.base.ExtraListener
 
@@ -26,7 +26,7 @@ class LandmineEvents extends ExtraListener {
 
   @EventHandler(priority = EventPriority.LOW)
   private def onExplosion(e: EntityExplodeEvent): Unit = {
-    if (e.isCancelled || !cConfig.getBoolean("landmine.chain-reactions")) {return}
+    if (e.isCancelled || !configs("config").getBoolean("landmine.chain-reactions")) {return}
     e.blockList().forEach({(block: Block) =>
       Landmine.isPresent(block.getLocation)
     })

@@ -1,10 +1,10 @@
 package dev.turtle.grenades
 package utils.extras
 
-import utils.Conf.cLang
+import utils.Conf.configs
 import utils.extras.ExtraConfig
 import utils.lang.Message
-import utils.lang.Message.{clientLang, debugMessage, defaultLang, placeholderPrefix, textPrefix}
+import utils.lang.Message.{clientLang, debugMessage, defaultLang, getLocalizedText, placeholderPrefix, textPrefix}
 
 import net.md_5.bungee.api.ChatMessageType
 import net.md_5.bungee.api.chat.TextComponent
@@ -29,28 +29,13 @@ trait ExtraCommandSender {
         debugMessage("console.notify.no-perm", Map("sender" -> s.getName))
       hasPerm
     }
+    def getLanguage: String = clientLang.getOrElse(s.getName, defaultLang)
 
     def sendMessage(path: String, placeholders: immutable.Map[String, String], chatMessageType: ChatMessageType = ChatMessageType.CHAT): Boolean = {
-      var text: String = {
-        try {
-          textPrefix + cLang.findString(s"${
-            clientLang.getOrElse(s.getName, defaultLang)
-          }.$path")
-        } catch {
-          case e: Throwable =>
-            path
-        }
-      }
-      for ((key, value) <- placeholders) {
-        text = text.replace(s"%$key%", {
-          if (value.contains("&")) value
-          else placeholderPrefix + value
-        } + textPrefix)
-      }
-      val translatedText: String = ChatColor.translateAlternateColorCodes('&', text)
+      val text: String = getLocalizedText(s.getLanguage, path, placeholders)
       s match
-        case player: Player => player.spigot().sendMessage(chatMessageType, new TextComponent(translatedText))
-        case _ => s.sendMessage(translatedText)
+        case player: Player => player.spigot().sendMessage(chatMessageType, new TextComponent(text))
+        case _ => s.sendMessage(text)
       true
     }
   }

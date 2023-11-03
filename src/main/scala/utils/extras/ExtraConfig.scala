@@ -3,7 +3,7 @@ package utils.extras
 
 import container.base.{ContainerSlot, Item}
 import enums.SlotAction
-import utils.Conf.{cContainerSlots, getFolderRelativeToPlugin}
+import utils.Conf.{configs, getFolderRelativeToPlugin}
 import utils.Exceptions.{ConfigContainerSlotNotValidException, ConfigNotFoundException, ConfigPathNotFoundException, ConfigValueNotFoundException}
 import utils.lang.Message.debugMessage
 
@@ -12,9 +12,9 @@ import org.bukkit.Material
 
 import java.io.{BufferedWriter, File, FileWriter}
 import java.util.List as JavaList
-import scala.collection.immutable
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.collection.{mutable, immutable}
 import scala.util.{Success, Try}
+import scala.jdk.CollectionConverters.*
 
 implicit class ExtraConfig(config: Config) {
   def name: String = config.origin.filename
@@ -90,10 +90,22 @@ implicit class ExtraConfig(config: Config) {
   }
 
   def save(path: String = ""): Boolean = {
-    val file = new File(getFolderRelativeToPlugin(path))
+    val file = new File({
+      if (path.isBlank) {
+        config.origin.filename
+      } else
+        getFolderRelativeToPlugin(path)
+    })
     try {
       val writer = new BufferedWriter(new FileWriter(file))
-      writer.write(config.root().render(ConfigRenderOptions.concise()))
+      writer.write({
+          config.root().render({
+            if (path.isBlank)
+              ConfigRenderOptions.defaults().setComments(false).setOriginComments(false).setFormatted(true)
+            else
+              ConfigRenderOptions.concise()
+          })
+      })
       writer.close()
     } catch {
       case e: Exception =>
@@ -128,7 +140,7 @@ implicit class ExtraConfig(config: Config) {
           try {
             val slotActionConfig = {
               if ((slotActionVal ne null) && (slotActionVal.valueType == ConfigValueType.STRING))
-                cContainerSlots.getConfig(slotActionVal.unwrapped.toString)
+                configs("containerslots").getConfig(slotActionVal.unwrapped.toString)
               else
                 ConfigFactory.parseString(slotActionVal.unwrapped.toString)
             }
@@ -151,6 +163,14 @@ implicit class ExtraConfig(config: Config) {
           Material.valueOf(slotConfig.findString("material").toUpperCase))
           .amount(slotConfig.findInt("amount"))
           .displayName(slotConfig.findString("displayName"))
+          .lore(java.util.ArrayList({
+            if (slotConfig.isPathPresent("lore"))
+              slotConfig.findStringList("lore")
+            else if (config.isPathPresent("metadata.default-lore"))
+              config.findStringList("metadata.default-lore")
+            else
+              new java.util.ArrayList[String]
+          }.asScala.map(_.replaceAll("&", "§")).asJava))
         ContainerSlot(slotActions=slotActions, item=item)
       } catch {
         case e: Exception =>
@@ -162,9 +182,9 @@ implicit class ExtraConfig(config: Config) {
   /**
    * path should be something like (container).(category)
    */
-  def findAllContainerSlots(path: String): immutable.Map[Int, ContainerSlot] = {
+  def findAllContainerSlots(path: String): mutable.Map[Int, ContainerSlot] = {
     val slotKeys = config.getConfig(s"$path.content").root().keySet().asScala
-    val containerSlots = slotKeys.foldLeft(immutable.Map.empty[Int, ContainerSlot]) {
+    val containerSlots = slotKeys.foldLeft(mutable.Map.empty[Int, ContainerSlot]) {
       (map, slot) =>
         val containerSlot = findContainerSlot(s"$path.content.$slot")
         map.updated(slot.toInt, containerSlot)

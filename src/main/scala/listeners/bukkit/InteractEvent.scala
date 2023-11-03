@@ -39,15 +39,15 @@ class InteractEvent extends ExtraListener, ExtraCommandSender {
     val p: Player = e.getPlayer
     val timeNow: Long = System.currentTimeMillis
     val cooldownRemaining: Long = (timeNow - cooldown(p.getName))
-    val cooldownThreshold = cConfig.getInt("cooldown.time") / 20 * 1000
+    val cooldownThreshold = configs("config").getInt("cooldown.time") / 20 * 1000
     if (cooldownRemaining > 0 && cooldownRemaining < cooldownThreshold) {
       if (!p.hasPermission("grenades.cooldown.bypass")) {
         val cooldownInMs: Double = (cooldownThreshold - cooldownRemaining) / 100
-        if (cConfig.getBoolean("cooldown.notify.enabled"))
+        if (configs("config").getBoolean("cooldown.notify.enabled"))
           p.sendMessage("cooldown.notify", Map(
             "cooldown" -> decimalFormat.format(cooldownInMs / 10)),
             chatMessageType = {
-              if (cConfig.getString("cooldown.notify.medium").equalsIgnoreCase("chat"))
+              if (configs("config").getString("cooldown.notify.medium").equalsIgnoreCase("chat"))
                 ChatMessageType.CHAT
               else ChatMessageType.ACTION_BAR
             }
@@ -60,7 +60,7 @@ class InteractEvent extends ExtraListener, ExtraCommandSender {
     var success: Boolean = true
     if (grenade.isLandmine) {
       val block: Block = e.getClickedBlock
-      if (!cConfig.getBoolean("landmine.enabled")) {}
+      if (!configs("config").getBoolean("landmine.enabled")) {}
       else if (block == null ||
           block.getType.equals(Material.AIR)
       ) p.sendMessage("landmine.placement.invalid", Map())

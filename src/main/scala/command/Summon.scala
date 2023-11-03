@@ -3,7 +3,7 @@ package command
 
 import command.base.CMD
 import explosions.base.ExplosionType
-import utils.Conf.*
+import utils.Conf.{configs, grenades}
 import utils.Grenade
 import utils.extras.ExtraConfig
 import utils.extras.ExtraPrimitive.*
@@ -23,7 +23,7 @@ object Summon extends CMD{
     if (args.length == 1) {
       s.sendMessage("commands.summon.list", Map("explosions" -> grenades.keySet.mkString(", ")))
     } else if (args.length >= 2) {
-      val permission: String = cCommands.findPermission(args(0), className, perm="summon")
+      val permission: String = configs("command").findPermission(args(0), className, perm="summon")
       if (s.hasPerm(permission)) {
         if (grenades.contains(args(1))) {
           val detonationLoc: Location = {

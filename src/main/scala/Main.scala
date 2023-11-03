@@ -2,8 +2,6 @@ package dev.turtle.grenades
 
 import Main.*
 import command.base.CMD
-import container.Editor
-import container.base.ContainerHolder
 import listeners.base.ExtraListener.registerAllEvents
 import utils.Conf
 import utils.Conf.*
@@ -53,7 +51,7 @@ class Main extends JavaPlugin {
     for (pluginName <- Array("CoreProtect", "FastAsyncWorldEdit")) {
       val plugin = getServer.getPluginManager.getPlugin(pluginName)
       if (plugin != null && plugin.isEnabled) {
-        if (Conf.cConfig.getBoolean(s"hooks.${pluginName.toLowerCase}"))
+        if (configs("config").getBoolean(s"hooks.${pluginName.toLowerCase}"))
           pluginName match
             case "CoreProtect" =>
               coreprotectapi = plugin.asInstanceOf[CoreProtectAPI]

@@ -2,7 +2,7 @@ package dev.turtle.grenades
 package listeners.bukkit
 
 import listeners.base.ExtraListener
-import utils.Conf.cLang
+import utils.Conf.configs
 import utils.extras.ExtraCommandSender
 import utils.lang.Message.clientLang
 
@@ -16,7 +16,7 @@ class AutoLangOnJoin extends ExtraListener, ExtraCommandSender {
   private def onJoin(e: PlayerJoinEvent): Unit = {
     if (!clientLang.contains(e.playerName)) {
       val playerLocale: String = e.getPlayer.getLocale
-      if (cLang.hasPath(playerLocale)) {
+      if (configs("lang").hasPath(playerLocale)) {
         clientLang(e.playerName) = playerLocale
         e.getPlayer.sendMessage(
           "lang.auto",

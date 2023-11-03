@@ -9,4 +9,5 @@ import org.bukkit.entity.HumanEntity
 enum SlotAction {
   case OpenContainer
   case Inquire
+  case PageChange
 }

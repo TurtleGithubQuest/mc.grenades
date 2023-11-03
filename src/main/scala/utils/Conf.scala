@@ -10,6 +10,7 @@ import utils.extras.ExtraConfig
 import utils.lang.Message.{debugMessage, defaultLang, reloadClientLangs}
 import utils.parts.{Explosion, Particle, Sound}
 
+import com.typesafe.config
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.bukkit.Bukkit.getLogger
 import org.bukkit.{Bukkit, ChatColor}
@@ -24,7 +25,8 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object Conf {
-  var cGrenades: Config = ConfigFactory.empty()
+  var configs: mutable.Map[String, Config] = mutable.Map()
+  /*var cGrenades: Config = ConfigFactory.empty()
   var cExplosions: Config = ConfigFactory.empty()
   var cParticles: Config = ConfigFactory.empty()
   var cSounds: Config = ConfigFactory.empty()
@@ -33,7 +35,7 @@ object Conf {
   var cLang: Config = ConfigFactory.empty()
   var cContainer: Config = ConfigFactory.empty()
   var cContainerSlots: Config = ConfigFactory.empty()
-  var cRecipes: Config = ConfigFactory.empty() //TODO: Reimplement this
+  var cRecipes: Config = ConfigFactory.empty() //TODO: Reimplement this*/
   var landmines: Config = ConfigFactory.empty()
 
   var grenades: mutable.Map[String, Grenade] = mutable.Map()
@@ -111,11 +113,13 @@ object Conf {
               case "data/landmines"  =>
                 landmines = landmines.withFallback(updatedFileConfig).resolve()
               case "lang" =>
-                cLang = cLang.withFallback(updatedFileConfig).resolve()
+                configs.update("lang", updatedFileConfig.resolve) //configs("lang") = configs("lang").withFallback(updatedFileConfig).resolve()
               case "container/containers" =>
-                cContainer = cContainer.withFallback(updatedFileConfig).resolve()
+                configs.update("container", updatedFileConfig.resolve)//configs("container") = configs("container").withFallback(updatedFileConfig).resolve()
               case "container/slots" =>
-                cContainerSlots = cContainerSlots.withFallback(fileConfig).resolve()
+                configs.update("containerslots", fileConfig.resolve)// = configs("containerslots").withFallback(fileConfig).resolve()
+              case "grenades" =>
+                configs("grenades") = configs("grenades").withFallback(fileConfig).resolve()
               case _ =>
                 debugMessage(s"&cAttempted to load unknown config: $folderPath", Map())
           }
@@ -123,50 +127,36 @@ object Conf {
       } else {
         folderPath match //Load default values
           case "lang" =>
-            cLang = cLang.withValue("en_us", this.get(configName = "lang/en_US").root())
+            configs.put("lang", ConfigFactory.empty.withValue("en_us", this.get(configName = "lang/en_US").root()))
           case "container/containers" =>
-            cContainer = cContainer.withValue("editor", this.get(configName = "container/containers/editor").root())
+            configs.put("container", ConfigFactory.empty.withValue("editor", this.get(configName = "container/containers/editor").root()))
           case "container/slots" =>
-            cContainerSlots = cContainerSlots.withValue("slots", this.get(configName = "container/slots/exampleslots").root())
+            configs.put("containerslots", ConfigFactory.empty.withValue("slots", this.get(configName = "container/slots/exampleslots").root()))
           case _ =>
             {}
       }
       true
     }
     def reloadGrenades(): Boolean = {
-      val grenadeTypesFolder = new File(getFolderRelativeToPlugin("grenades"))
-      val grenadeTypesFiles = grenadeTypesFolder.listFiles()
-      if (grenadeTypesFiles != null){
-        for (grenadeTypeFile <- grenadeTypesFiles) {
-          if (grenadeTypeFile.getName.endsWith(".conf")) {
-            val fileConfig = ConfigFactory.parseFile(grenadeTypeFile)
-            cGrenades = cGrenades.withFallback(fileConfig).resolve()
-          }
-        }
-      }
-      cGrenades = this.get("grenades").withFallback(this.get("grenades", true))
-      for (keyName <- cGrenades.root().keySet().asScala.toSet) {
-        val grenadeCategory: Config = cGrenades.getConfig(keyName)
+      reloadConfigsInFolder(folderPath="grenades", fileType=".conf", toLowerCase=true)
+      configs("grenades") = this.get("grenades").withFallback(this.get("grenades", true))
+      for (keyName <- configs("grenades").root().keySet().asScala.toSet) {
+        val grenadeCategory: Config = configs("grenades").getConfig(keyName)
         try {
-          def getGrenadeInfo(path: String): String = {
+          def getGrenadeInfo(path: String): String =
             grenadeCategory.findString(s"$path")
-          }
 
-          def getExplosionInfo(path: String): String = {
-            cExplosions.findString(s"${getGrenadeInfo("explosion")}.$path")
-          }
+          def getExplosionInfo(path: String): String =
+            configs("explosions").findString(s"${getGrenadeInfo("explosions")}.$path")
 
-          def getParticleInfo(path: String): String = {
-            cParticles.findString(s"${getGrenadeInfo("particles")}.$path")
-          }
+          def getParticleInfo(path: String): String =
+            configs("particles").findString(s"${getGrenadeInfo("particles")}.$path")
 
-          def getParticleInfoExplosion(path: String): String = {
-            cParticles.findString(s"${getExplosionInfo("particles")}.$path")
-          }
+          def getParticleInfoExplosion(path: String): String =
+            configs("particles").findString(s"${getExplosionInfo("particles")}.$path")
 
-          def getSoundInfo(path: String): String = {
-            cSounds.findString(s"${getExplosionInfo("sound")}.$path")
-          }
+          def getSoundInfo(path: String): String =
+            configs("sounds").findString(s"${getExplosionInfo("sound")}.$path")
 
           val hexColor = getParticleInfo("color")
           val decodedColor = Color.decode(hexColor)
@@ -180,7 +170,7 @@ object Conf {
                 explosionType = ExplosionType.fromClass(
                   s"dev.turtle.grenades.explosions.${explosionTypes(getExplosionInfo("name").toUpperCase)}",
                   dropItems = getExplosionInfo("drop-items").toInt,
-                  dropLocations = cExplosions.findStringList(s"${getGrenadeInfo("explosion")}.drop-locations").toArray(Array.empty[String]).map { str =>
+                  dropLocations = configs("explosions").findStringList(s"${getGrenadeInfo("explosions")}.drop-locations").toArray(Array.empty[String]).map { str =>
                     val enumValue = DropLocation.values.find(_.toString == str)
                     enumValue.getOrElse(throw ConfigValueNotFoundException(s"Invalid DropLocation: $str", 150))
                   },
@@ -233,49 +223,43 @@ object Conf {
       config.withValue(path, ConfigValueFactory.fromAnyRef(value))
     }
 
-    def reload(): Boolean = {
-      cConfig = this.get("config").withFallback(this.get("config", true))
+    def reload(): Boolean = { //TODO: FIX: Configuration is not being loaded if its being loaded as default
+      for (configName <- Array("config", "explosions", "particles", "sounds")) {
+        configs(configName) = this.get(configName).withFallback(this.get(configName, true))
+      }
+      decimalFormat = new DecimalFormat(configs("config").getString("general.decimal-format"))
+      debugMode = configs("config").getInt("general.debug")
+      pluginPrefix = configs("config").getString("general.plugin.name")
+      pluginSep = configs("config").getString("general.plugin.sep")
       reloadConfigsInFolder(folderPath = "lang", fileType = ".conf", toLowerCase=true)
-      cExplosions = this.get("explosions").withFallback(this.get("explosions", true))
-      cParticles = this.get("particles").withFallback(this.get("particles", true))
-      cSounds = this.get("sounds").withFallback(this.get("sounds", true))
-      decimalFormat = new DecimalFormat(cConfig.getString("general.decimal-format"))
-      debugMode = cConfig.getInt("general.debug")
-      pluginPrefix = cConfig.getString("general.plugin.name")
-      pluginSep = cConfig.getString("general.plugin.sep")
       reloadGrenades()
       reloadConfigsInFolder(folderPath="data/landmines")
-      reloadConfigsInFolder(folderPath="container/containers", fileType=".conf", toLowerCase=true)
       reloadConfigsInFolder(folderPath="container/slots", fileType=".conf", toLowerCase=true)
+      reloadConfigsInFolder(folderPath="container/containers", fileType=".conf", toLowerCase=true)
       reloadClientLangs()
-      Blocks.reloadVariables(newInterval=cConfig.getLong("general.block-queue.interval"), newMaxBlocksPerLoop=cConfig.getInt("general.block-queue.max-blocks-per-loop"))
+      Blocks.reloadVariables(newInterval=configs("config").getLong("general.block-queue.interval"), newMaxBlocksPerLoop=configs("config").getInt("general.block-queue.max-blocks-per-loop"))
       CMD.reload()
       true
     }
     def getLore(grenadeName: String): java.util.ArrayList[String] = {
-      val cfg: Map[String, Config] = Map(
-        "grenade" -> cGrenades.getConfig(s"$grenadeName"),
-        "explosion" -> cExplosions,
-        "particles" -> cParticles
-      )
-
-      var lore: JavaList[String] = cfg("grenade").getStringList("item.lore")
+      var lore: JavaList[String] = configs("grenades").getConfig(grenadeName).getStringList("item.lore")
       if (lore.isEmpty) {
         val placeholderRegex = "%(.*?)%".r
-        lore = cLang.getStringList(s"$defaultLang.item.grenade.lore").asScala.map { word =>
+        lore = configs("lang").getStringList(s"$defaultLang.item.grenade.lore").asScala.map { word =>
           val replacedWord = placeholderRegex.replaceAllIn(word.toString, m => {
             val placeholder = m.group(1)
             val splitPlaceholder = placeholder.split("\\|")
-            val config: Config = {
-              if (splitPlaceholder.length <= 1 || !cfg.contains(splitPlaceholder(0))) cfg("grenade")
-              else cfg(splitPlaceholder(0)).getConfig(
-                cGrenades.getString(s"$grenadeName.${splitPlaceholder(0)}")
+            val selectedConfig: Config = {
+              if (splitPlaceholder.length <= 1 || !configs.contains(splitPlaceholder(0)))
+                configs("grenades").getConfig(grenadeName)
+              else configs(splitPlaceholder(0)).getConfig(
+                configs("grenades").getString(s"$grenadeName.${splitPlaceholder(0)}")
               )
             }
-            if (splitPlaceholder.length <= 1 && config.hasPath(placeholder)) {
-              config.getString(placeholder)
-            } else if (splitPlaceholder.length > 1 && config.hasPath(splitPlaceholder(1))){
-              config.getString(splitPlaceholder(1))
+            if (splitPlaceholder.length <= 1 && selectedConfig.hasPath(placeholder)) {
+              selectedConfig.getString(placeholder)
+            } else if (splitPlaceholder.length > 1 && selectedConfig.hasPath(splitPlaceholder(1))){
+              selectedConfig.getString(splitPlaceholder(1))
             } else m.matched
           })
           replacedWord
