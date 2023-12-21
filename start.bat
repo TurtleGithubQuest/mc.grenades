@@ -1,1 +1,1 @@
-java -jar "spigot-1.20.2.jar" -nogui
+java -jar "purpur-1.20.2-2095.jar" -nogui

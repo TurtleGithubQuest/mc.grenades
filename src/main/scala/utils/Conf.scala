@@ -11,7 +11,7 @@ import utils.lang.Message.{debugMessage, defaultLang, reloadClientLangs}
 import utils.parts.{Explosion, Particle, Sound}
 
 import com.typesafe.config
-import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
+import com.typesafe.config.{Config, ConfigException, ConfigFactory, ConfigValueFactory}
 import org.bukkit.Bukkit.getLogger
 import org.bukkit.{Bukkit, ChatColor}
 
@@ -210,9 +210,11 @@ object Conf {
                 getGrenadeInfo("entity.custom-name.value")),
               fuseTime = getGrenadeInfo("entity.fuse").toInt,
               velocity = getGrenadeInfo("entity.velocity").toDouble,
-              customModelData = getGrenadeInfo("custom-model-data").toInt
+              customModelData = getGrenadeInfo("custom-model-data").toInt,
+              ricochet=getGrenadeInfo("entity.ricochet").toBoolean
             ))
         } catch {
+          case e: ConfigException => debugMessage(s"&cCouldn't load &4$keyName&c, ${e.getStackTrace.mkString(", ")}", debugLevel=150)
           case e: ConfigValueNotFoundException =>
             debugMessage(s"&cCouldn't load &4$keyName&c, ${e.message}", debugLevel=e.debugLevel)
         }

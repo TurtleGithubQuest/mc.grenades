@@ -11,40 +11,23 @@ import org.bukkit.{ChatColor, Location, Material}
 
 import java.util
 
-
-trait T_Grenade {
-  def id: String
-  def displayName: String
-  def lore: util.ArrayList[String]
-  def explosion: Explosion
-  def isLandmine: Boolean
-  def trail: Particle
-  def material: Material
-  //def armorStand: ArmorStand
-  def glow: Boolean
-  def model: String
-  def customNameVisible: Boolean
-  def customName: String
-  def fuseTime: Integer
-  def velocity: Double
-  def customModelData: Integer
-}
-class Grenade(
-             val id: String,
-             val displayName: String,
-             val lore: util.ArrayList[String],
-             val explosion: Explosion,
-             val isLandmine: Boolean,
-             val trail: Particle,
-             val material: Material,
-             val glow: Boolean,
-             val model: String,
-             val customNameVisible: Boolean,
-             val customName: String,
-             val fuseTime: Integer,
-             val velocity: Double,
-             val customModelData: Integer
-             ) extends T_Grenade {
+case class Grenade(
+             id: String,
+             displayName: String,
+             lore: util.ArrayList[String],
+             explosion: Explosion,
+             isLandmine: Boolean,
+             trail: Particle,
+             material: Material,
+             glow: Boolean,
+             model: String,
+             customNameVisible: Boolean,
+             customName: String,
+             fuseTime: Integer,
+             velocity: Double,
+             customModelData: Integer,
+             ricochet: Boolean
+             ) {
 
       def apply: Boolean = {
         val item: NBTItem = new NBTItem(new ItemStack(material))

@@ -9,9 +9,10 @@ import org.bukkit.entity.*
 import org.bukkit.entity.AbstractArrow.PickupStatus
 import org.bukkit.inventory.ItemStack
 import org.bukkit.scheduler.{BukkitRunnable, BukkitTask}
-import org.bukkit.{Location, Particle, World}
+import org.bukkit.{Bukkit, Location, World}
 
 import scala.jdk.CollectionConverters.*
+import org.bukkit.util.Vector as BukkitVector
 
 class GrenadeEntity(val grenade: Grenade,
                     val owner: Player = null
@@ -21,6 +22,7 @@ class GrenadeEntity(val grenade: Grenade,
 
   def spawn(loc: Location, direction: org.bukkit.util.Vector): GrenadeEntity = {
     val world: World = loc.getWorld
+
     loc.setY(loc.getY+1)
     val velocity = direction.multiply(grenade.velocity)
     try {
@@ -89,6 +91,7 @@ class GrenadeEntity(val grenade: Grenade,
     def start(): BukkitTask = {
       new BukkitRunnable() {
         var detonationTime: Double = grenade.fuseTime.toDouble
+        var gModelVector: org.bukkit.util.Vector = gModel.getVelocity
         override def run(): Unit = {
           if (detonationTime == 0 || selfDestruct || !gModel.isValid ) {
             detonate()
@@ -101,6 +104,20 @@ class GrenadeEntity(val grenade: Grenade,
               gModel.setCustomName(grenade.customName.replaceAll("%countdown%", countdown))
             }
             detonationTime -= 1
+          }
+          if (grenade.ricochet) {
+            val impactVector = gModel.getVelocity.normalize.subtract(gModelVector.normalize)
+
+            if ((impactVector.length() > 1) && (impactVector.length() < 2)) { //Impact
+              val normal = new BukkitVector(impactVector.getX, impactVector.getY, impactVector.getZ)
+              gModel.setVelocity(
+                gModelVector.subtract(
+                  normal.multiply(
+                    2*gModelVector.dot(normal)
+                  )
+                )
+              )
+            }
           }
         }
       }.runTaskTimer(plugin, 0L, 1L)
