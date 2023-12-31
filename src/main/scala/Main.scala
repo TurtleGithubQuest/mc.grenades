@@ -7,7 +7,11 @@ import utils.Conf
 import utils.Conf.*
 import utils.lang.Message.debugMessage
 
+import dev.turtle.grenades.command.Help
 import de.tr7zw.changeme.nbtapi.NBTItem
+import dev.turtle.onelib.OneLib
+import dev.turtle.onelib.api.{OneLibAPI, OnePlugin}
+import dev.turtle.onelib.command.OneCommand
 import net.coreprotect.CoreProtectAPI
 import org.bukkit.entity.Player
 import org.bukkit.plugin.java.JavaPlugin
@@ -21,7 +25,7 @@ object Main {
   var debugMode: Integer = 1
   var pluginPrefix = "Grenade"
   var pluginSep = ":"
-  var plugin: JavaPlugin = _
+  var plugin: OnePlugin = _
   var owedItems: mutable.Map[Player, NBTItem] = mutable.Map()
   var cooldown: mutable.Map[String, Long] = mutable.Map().withDefault(k => (System.currentTimeMillis))
   var random: Random = _
@@ -29,14 +33,12 @@ object Main {
   var decimalFormat = new DecimalFormat("##0.#")
 }
 
-class Main extends JavaPlugin {
+class Main extends OnePlugin {
 
   override def onEnable(): Unit = {
     plugin = this
     random = new Random
-    /*var te: Array[ContainerHolder] = Array(new Editor("ed1", 5), new Editor("ed2", 5))
-    for (t <- te)
-      getLogger.info(t.className)*/
+    OneLib.registerPlugin(this, commands)
     Conf.reload()
     getCommand("grenade").setExecutor(CMD)
     registerAllEvents
@@ -60,5 +62,10 @@ class Main extends JavaPlugin {
           debugMessage(s"$pluginPrefix$pluginSep &eshook hands with $pluginName.", immutable.Map())
       }
     }
+  }
+  private def commands: Seq[OneCommand] = {
+    Seq(
+      Help,
+    )
   }
 }

@@ -6,7 +6,7 @@ import utils.Conf
 
 import org.bukkit.command.CommandSender
 
-object Reload extends CMD{
+object Reload extends CMD {
   override def execute(s: CommandSender, args: Array[String]): Boolean = {
     if (args.length == 1) {
       Conf.reload()

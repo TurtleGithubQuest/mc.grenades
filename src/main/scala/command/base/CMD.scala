@@ -31,7 +31,7 @@ object CMD extends TabExecutor, ExtraCommandSender {
 
   var commands: mutable.Map[String, CMD] = mutable.Map()
   private val commandsClass: mutable.Map[String, CMD] = mutable.Map(
-    "help" -> command.Help,
+    //"help" -> command.Help,
     "give" -> command.Give,
     "reload" -> command.Reload,
     "lang" -> command.Lang,
@@ -83,7 +83,7 @@ object CMD extends TabExecutor, ExtraCommandSender {
         }
       } else true
     } else {
-      Help.helpPage(s)
+      //Help.helpPage(s)
       true
     }
   }
