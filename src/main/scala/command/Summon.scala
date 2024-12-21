@@ -2,14 +2,12 @@ package dev.turtle.grenades
 package command
 
 import command.base.CMD
-import explosions.base.ExplosionType
 import utils.Conf.{configs, grenades}
 import utils.Grenade
 import utils.extras.ExtraConfig
 import utils.extras.ExtraPrimitive.*
 import utils.lang.Message.debugMessage
 import utils.optimized.OnlinePlayers
-import utils.parts.GrenadeEntity
 
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player

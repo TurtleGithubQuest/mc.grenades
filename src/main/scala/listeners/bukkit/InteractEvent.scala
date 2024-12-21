@@ -22,65 +22,95 @@ import org.bukkit.inventory.ItemStack
 import scala.collection.immutable
 import scala.jdk.CollectionConverters.*
 
-class InteractEvent extends ExtraListener, ExtraCommandSender {
+class InteractEvent extends ExtraListener with ExtraCommandSender {
+  private val config = configs("config")
+  private val CooldownTime = config.getInt("cooldown.time") / 20 * 1000
+  private val IsCooldownNotifyEnabled = config.getBoolean("cooldown.notify.enabled")
+  private val IsLandmineEnabled = config.getBoolean("landmine.enabled")
 
   @EventHandler(priority = EventPriority.HIGH)
   private def interact(e: PlayerInteractEvent): Unit = {
-    val itemInHand: ItemStack = e.getItem
-    if (itemInHand == null ||
-        itemInHand.getType == Material.AIR ||
-        !e.getAction.toString.contains("RIGHT_CLICK")
-    ) return
-    val nbtItem: NBTItem = new NBTItem(itemInHand)
-    if (!nbtItem.hasTag("grenade_id")) return
-    e.setCancelled(true)
-    val grenade_id: String = nbtItem.getString("grenade_id")
-    if (!grenades.contains(grenade_id)) return //TODO: Take item from player and log it
-    val p: Player = e.getPlayer
-    val timeNow: Long = System.currentTimeMillis
-    val cooldownRemaining: Long = (timeNow - cooldown(p.getName))
-    val cooldownThreshold = configs("config").getInt("cooldown.time") / 20 * 1000
-    if (cooldownRemaining > 0 && cooldownRemaining < cooldownThreshold) {
-      if (!p.hasPermission("grenades.cooldown.bypass")) {
-        val cooldownInMs: Double = (cooldownThreshold - cooldownRemaining) / 100
-        if (configs("config").getBoolean("cooldown.notify.enabled"))
-          p.sendMessage("cooldown.notify", Map(
-            "cooldown" -> decimalFormat.format(cooldownInMs / 10)),
-            chatMessageType = {
-              if (configs("config").getString("cooldown.notify.medium").equalsIgnoreCase("chat"))
-                ChatMessageType.CHAT
-              else ChatMessageType.ACTION_BAR
-            }
-          )
-          return
-      }
+    for {
+      itemInHand <- Option(e.getItem) if isValidInteraction(itemInHand, e)
+      grenadeId <- getGrenadeId(itemInHand)
+      grenade <- grenades.get(grenadeId)
+    } yield {
+      e.setCancelled(true)
+      handleGrenadeUsage(e.getPlayer, itemInHand, grenade, e)
     }
-    cooldown.put(p.getName, timeNow)
-    val grenade: Grenade = grenades(grenade_id)
-    var success: Boolean = true
-    if (grenade.isLandmine) {
-      val block: Block = e.getClickedBlock
-      if (!configs("config").getBoolean("landmine.enabled")) {}
-      else if (block == null ||
-          block.getType.equals(Material.AIR)
-      ) p.sendMessage("landmine.placement.invalid", Map())
-      else if (!canDestroyThatBlock(p, block))
-        p.sendMessage("landmine.placement.no-perm", Map())
-      else {
-        val worldName: String = block.getWorld.getName
-        val landmineCoords = Landmine.coordsFromLoc(e.getClickedBlock.getLocation)
-        if (!landmines.hasPath(worldName))
-          landmines = landmines.withValue(worldName, ConfigValueFactory.fromMap(Map().asJava))
-        Landmine.saveAndReloadAll(worldName, immutable.Map(
-          s"$landmineCoords.owner" -> p.getName,
-          s"$landmineCoords.grenade_id" -> grenade_id
-        ))
-        block.setType(Material.OAK_PRESSURE_PLATE)
-      }
-    } else {
-      success = (grenade.spawn(p.getLocation, p.getLocation.getDirection, owner = p) ne null)
-    }
-    if (success)
-      itemInHand.setAmount(itemInHand.getAmount - 1)
   }
+
+  private def isValidInteraction(item: ItemStack, e: PlayerInteractEvent): Boolean =
+    item.getType != Material.AIR && e.getAction.toString.contains("RIGHT_CLICK")
+
+  private def getGrenadeId(item: ItemStack): Option[String] = {
+    val nbtItem = new NBTItem(item)
+    Option.when(nbtItem.hasTag("grenade_id"))(nbtItem.getString("grenade_id"))
+  }
+
+  private def handleGrenadeUsage(player: Player, item: ItemStack, grenade: Grenade, e: PlayerInteractEvent): Unit = {
+    if (checkCooldown(player)) {
+      val success = if (grenade.isLandmine) handleLandmine(player, grenade.id, e)
+                   else handleGrenade(player, grenade)
+
+      if (success) reduceItemAmount(item)
+    }
+    cooldown.put(player.getName, System.currentTimeMillis)
+  }
+
+  private def checkCooldown(player: Player): Boolean = {
+    val remainingTime = System.currentTimeMillis - cooldown(player.getName)
+    if (remainingTime > 0 && remainingTime < CooldownTime && !player.hasPermission("grenades.cooldown.bypass")) {
+      notifyCooldown(player, remainingTime)
+      false
+    } else true
+  }
+
+  private def notifyCooldown(player: Player, remainingTime: Long): Unit = {
+    if (IsCooldownNotifyEnabled) {
+      val cooldownInSeconds = (CooldownTime - remainingTime) / 1000.0
+      val messageType = if (config.getString("cooldown.notify.medium").equalsIgnoreCase("chat"))
+                         ChatMessageType.CHAT else ChatMessageType.ACTION_BAR
+      player.sendMessage("cooldown.notify",
+        Map("cooldown" -> decimalFormat.format(cooldownInSeconds)),
+        chatMessageType = messageType)
+    }
+  }
+
+  private def handleLandmine(player: Player, grenadeId: String, e: PlayerInteractEvent): Boolean = {
+    if (!IsLandmineEnabled) return false
+
+    Option(e.getClickedBlock).filter(_.getType != Material.AIR) match {
+      case Some(block) if canDestroyThatBlock(player, block) =>
+        placeLandmine(player, block, grenadeId)
+        true
+      case Some(_) =>
+        player.sendMessage("landmine.placement.no-perm", Map())
+        false
+      case None =>
+        player.sendMessage("landmine.placement.invalid", Map())
+        false
+    }
+  }
+
+  private def placeLandmine(player: Player, block: Block, grenadeId: String): Unit = {
+    val worldName = block.getWorld.getName
+    val landmineCoords = coordsFromLoc(block.getLocation)
+
+    if (!landmines.hasPath(worldName)) {
+      landmines = landmines.withValue(worldName, ConfigValueFactory.fromMap(Map().asJava))
+    }
+
+    Landmine.saveAndReloadAll(worldName, immutable.Map(
+      s"$landmineCoords.owner" -> player.getName,
+      s"$landmineCoords.grenade_id" -> grenadeId
+    ))
+    block.setType(Material.OAK_PRESSURE_PLATE)
+  }
+
+  private def handleGrenade(player: Player, grenade: Grenade): Boolean =
+    grenade.spawn(player.getLocation, player.getLocation.getDirection, owner = player) != null
+
+  private def reduceItemAmount(item: ItemStack): Unit =
+    item.setAmount(item.getAmount - 1)
 }

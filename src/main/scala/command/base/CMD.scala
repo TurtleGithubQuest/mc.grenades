@@ -2,7 +2,6 @@ package dev.turtle.grenades
 
 package command.base
 
-import command.Help
 import utils.Conf.configs
 import utils.extras.{ExtraCommandSender, ExtraConfig}
 import utils.lang.Message.debugMessage

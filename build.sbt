@@ -7,12 +7,13 @@ ThisBuild / resolvers ++= Seq(
   "net-coreprotect" at "https://maven.playpro.com"
 )
 ThisBuild / libraryDependencies ++= Seq(
-  "org.spigotmc" % "spigot-api" % "1.20.2-R0.1-SNAPSHOT" % "provided",
+  "org.spigotmc" % "spigot-api" % "1.21.3-R0.1-SNAPSHOT" % "provided",
   "de.tr7zw" % "item-nbt-api" % "2.12.0" % "compile",
   "net.coreprotect" % "coreprotect" % "21.3" % "provided",
-  "com.typesafe" % "config" % "1.4.2"
+  "com.typesafe" % "config" % "1.4.3"
 )
 lazy val onelib_version = "1.0.1b"
+
 lazy val commonSettings = Seq(
   name := "Grenades",
   idePackagePrefix.withRank(KeyRanks.Invisible) := Some("dev.turtle.grenades"),
@@ -22,6 +23,7 @@ lazy val commonSettings = Seq(
     case x => (assembly / assemblyMergeStrategy).value.apply(x)
   },
 )
+
 lazy val fatSettings = Seq(
   assembly / assemblyOutputPath := file(s"S:\\mc_server\\plugins\\${name.value}-${version.value}-fat.jar"),
   assembly / assemblyOption ~= {
@@ -32,6 +34,7 @@ lazy val fatSettings = Seq(
     ShadeRule.rename("dev.turtle.onelib.**" -> "dev.turtle.shaded.onelib.@1").inAll,
   )
 )
+
 lazy val slimSettings = Seq(
   assembly / assemblyOutputPath := file(s"S:\\mc_server\\plugins\\${name.value}-${version.value}-slim.jar"),
   assembly / assemblyOption ~= {
@@ -41,11 +44,11 @@ lazy val slimSettings = Seq(
     ShadeRule.rename("de.tr7zw.**" -> "dev.turtle.shaded.nbtapi.@1").inAll
   )
 )
-/*inConfig(Fat)(baseAssemblySettings ++ inTask(assembly)(fatSettings))
-inConfig(Slim)(baseAssemblySettings ++ inTask(assembly)(slimSettings))*/
+
 lazy val core = project.in(file("."))
   .settings(libraryDependencies ++= Seq("com.github.TurtleGithubQuest" % "OneLib" % onelib_version % "provided"))
-  .settings(commonSettings:_*)
+  .settings(commonSettings *)
+
 /**
  *  slimmy / assembly
  *  @return no shaded OneLib & Scala libs
@@ -57,6 +60,7 @@ lazy val slimmy = Project(
   .settings(
   libraryDependencies ++= Seq("com.github.TurtleGithubQuest" % "OneLib" % onelib_version % "provided"),
 ).settings(commonSettings++slimSettings)
+
 /**
  *  fatty / assembly
  *  @return shaded OneLib & Scala, "standalone" ver

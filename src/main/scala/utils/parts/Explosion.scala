@@ -7,7 +7,7 @@ import explosions.base.ExplosionType
 import utils.Blocks
 import utils.Blocks.ShrimpleBlock
 
-import org.bukkit.Location
+import org.bukkit.{ExplosionResult, Location}
 import org.bukkit.block.Block
 import org.bukkit.entity.{Damageable, Entity}
 import org.bukkit.event.entity.EntityExplodeEvent
@@ -46,7 +46,7 @@ case class Explosion(
     val result: Try[Array[Block]] = Await.ready(blocksInRadiusAsync, Duration.Inf).value.get
     result match {
       case Success(blocks) =>
-        val entityExplodeEvent = new EntityExplodeEvent(grenadeEntity, loc, blocks.toList.asJava, power.toFloat)
+        val entityExplodeEvent = new EntityExplodeEvent(grenadeEntity, loc, blocks.toList.asJava, power.toFloat, ExplosionResult.DESTROY)
         plugin.getServer.getPluginManager.callEvent(entityExplodeEvent)
         if (!entityExplodeEvent.isCancelled) {
           cleanup(loc, explosionType.filterBlocks(loc=loc, blocks=blocks, source=source))

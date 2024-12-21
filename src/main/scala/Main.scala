@@ -2,12 +2,12 @@ package dev.turtle.grenades
 
 import Main.*
 import command.base.CMD
+import command.Help
 import listeners.base.ExtraListener.registerAllEvents
 import utils.Conf
 import utils.Conf.*
 import utils.lang.Message.debugMessage
 
-import dev.turtle.grenades.command.Help
 import de.tr7zw.changeme.nbtapi.NBTItem
 import dev.turtle.onelib.OneLib
 import dev.turtle.onelib.api.{OneLibAPI, OnePlugin}
@@ -41,15 +41,16 @@ class Main extends OnePlugin {
     OneLib.registerPlugin(this, commands)
     Conf.reload()
     getCommand("grenade").setExecutor(CMD)
-    registerAllEvents
-    hookPlugins
+    registerAllEvents()
+    hookPlugins()
   }
 
   override def onDisable(): Unit = {
     var recipecount = 0
     var i = 0
   }
-  private def hookPlugins: Unit = {
+  
+  private def hookPlugins(): Unit = {
     for (pluginName <- Array("CoreProtect", "FastAsyncWorldEdit")) {
       val plugin = getServer.getPluginManager.getPlugin(pluginName)
       if (plugin != null && plugin.isEnabled) {
@@ -63,6 +64,7 @@ class Main extends OnePlugin {
       }
     }
   }
+  
   private def commands: Seq[OneCommand] = {
     Seq(
       Help,

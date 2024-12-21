@@ -15,4 +15,4 @@ class ContainerClickEvent(e: InventoryClickEvent) extends InventoryClickEvent(
 }
 object ContainerClickEvent:
   private val handlerList: HandlerList = new HandlerList
-  def getHandlerList(): HandlerList = handlerList
+  def getHandlerList: HandlerList = handlerList

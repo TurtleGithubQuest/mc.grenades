@@ -21,7 +21,7 @@ case class Particle(
     val particle = name match {
       case "REDSTONE" =>
         dustOptions = new DustOptions(color, size)
-        org.bukkit.Particle.REDSTONE
+        org.bukkit.Particle.DUST
       case _ =>
         org.bukkit.Particle.valueOf(name)
     }
