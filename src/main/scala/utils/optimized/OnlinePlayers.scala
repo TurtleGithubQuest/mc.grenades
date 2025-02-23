@@ -11,21 +11,22 @@ import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.*
 
 object OnlinePlayers {
-  private var array: ArrayBuffer[String] = new ArrayBuffer[String]
-  array ++= Bukkit.getOnlinePlayers.asScala.map(_.getName)
-  def get: Array[String] = {
-    array.toArray
-  }
+		private var array: ArrayBuffer[String] = new ArrayBuffer[String]
+		array ++= Bukkit.getOnlinePlayers.asScala.map(_.getName)
+
+		def get: Array[String] = {
+				array.toArray
+		}
 }
 
 class OnlinePlayers extends ExtraListener {
-  @EventHandler(priority = EventPriority.LOWEST)
-  private def onJoin(e: PlayerJoinEvent): Unit = {
-    array += e.getPlayer.getName
-  }
+		@EventHandler(priority = EventPriority.LOWEST)
+		private def onJoin(e: PlayerJoinEvent): Unit = {
+				array += e.getPlayer.getName
+		}
 
-  @EventHandler(priority = EventPriority.LOWEST)
-  private def onQuit(e: PlayerQuitEvent): Unit = {
-    array -= e.getPlayer.getName
-  }
+		@EventHandler(priority = EventPriority.LOWEST)
+		private def onQuit(e: PlayerQuitEvent): Unit = {
+				array -= e.getPlayer.getName
+		}
 }
