@@ -11,12 +11,13 @@ import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.*
 
 object OnlinePlayers {
-		private var array: ArrayBuffer[String] = new ArrayBuffer[String]
+		private val array: ArrayBuffer[String] = new ArrayBuffer[String]
 		array ++= Bukkit.getOnlinePlayers.asScala.map(_.getName)
 
 		def get: Array[String] = {
 				array.toArray
 		}
+
 }
 
 class OnlinePlayers extends ExtraListener {
@@ -29,4 +30,5 @@ class OnlinePlayers extends ExtraListener {
 		private def onQuit(e: PlayerQuitEvent): Unit = {
 				array -= e.getPlayer.getName
 		}
+
 }

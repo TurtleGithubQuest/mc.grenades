@@ -10,11 +10,10 @@ import utils.lang.Message.debugMessage
 
 import de.tr7zw.changeme.nbtapi.NBTItem
 import dev.turtle.onelib.OneLib
-import dev.turtle.onelib.api.{OneLibAPI, OnePlugin}
+import dev.turtle.onelib.api.OnePlugin
 import dev.turtle.onelib.command.OneCommand
 import net.coreprotect.CoreProtectAPI
 import org.bukkit.entity.Player
-import org.bukkit.plugin.java.JavaPlugin
 
 import java.text.DecimalFormat
 import scala.collection.mutable.Map
@@ -28,9 +27,10 @@ object Main {
 		var plugin: OnePlugin = _
 		var owedItems: mutable.Map[Player, NBTItem] = mutable.Map()
 		var cooldown: mutable.Map[String, Long] = mutable.Map().withDefault(k => (System.currentTimeMillis))
-		var random: Random = _
-		var coreprotectapi: CoreProtectAPI = null
+		private var random: Random = _
+		var coreprotectApi: Option[CoreProtectAPI] = None
 		var decimalFormat = new DecimalFormat("##0.#")
+
 }
 
 class Main extends OnePlugin {
@@ -57,7 +57,7 @@ class Main extends OnePlugin {
 								if (configs("config").getBoolean(s"hooks.${pluginName.toLowerCase}"))
 										pluginName match
 												case "CoreProtect" =>
-														coreprotectapi = plugin.asInstanceOf[CoreProtectAPI]
+														coreprotectApi = Some(plugin.asInstanceOf[CoreProtectAPI])
 												case "FastAsyncWorldEdit" => {}
 										debugMessage(s"$pluginPrefix$pluginSep &eshook hands with $pluginName.", immutable.Map())
 						}
@@ -69,4 +69,5 @@ class Main extends OnePlugin {
 						Help,
 				)
 		}
+
 }

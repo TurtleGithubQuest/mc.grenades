@@ -1,8 +1,10 @@
 import sbt.*
 import sbt.Keys.*
-import java.io.File
 import scala.sys.process.{Process, ProcessLogger}
 import sbtassembly.AssemblyKeys.assembly
+import java.nio.file.{FileSystems, Files}
+import scala.jdk.CollectionConverters.*
+import java.nio.file.StandardWatchEventKinds.*
 
 object DockerTasks {
 		lazy val dockerContainerName = settingKey[String]("Name of the Docker container")
@@ -14,6 +16,8 @@ object DockerTasks {
 		lazy val dockerEnsureRunning = taskKey[Unit]("Ensure Docker container is running")
 		lazy val deployToDocker = taskKey[Unit]("Deploy plugin to Docker container")
 		lazy val assemblyAndDeploy = taskKey[Unit]("Builds and deploys the plugin")
+		lazy val buildAndDeploy = taskKey[Unit]("Builds and deploys the plugin without server restart")
+		lazy val codeWatch = taskKey[Unit]("Watch for changes in '/src' and redeploy")
 
 		private def isDockerRunning: Boolean = {
 				try {
@@ -36,19 +40,26 @@ object DockerTasks {
 						"docker", "exec",
 						containerName,
 						"/bin/bash", "-c",
-						"pkill -f 'java -jar server.jar' || true"
+						"screen -S minecraft -X stuff \"stop\\015\" || true"
 				)).!
 
 				Thread.sleep(2000)
 
-				log.info("Starting the server..")
 				Process(Seq(
-						"docker", "exec", "-d",
+						"docker", "exec",
+						containerName,
+						"/bin/bash", "-c",
+						"screen -wipe && screen -X -S minecraft quit || true"
+				)).!
+
+				log.info("Starting the server in screen session..")
+				Process(Seq(
+						"docker", "exec",
 						containerName,
 						"/bin/bash", "-c",
 						"cd /home/minecraft/server && " +
 							"rm -f world/session.lock && " +
-							"java -jar server.jar nogui >> /proc/1/fd/1 2>> /proc/1/fd/2"
+							"screen -L -dmS minecraft java -jar server.jar nogui && tail -f screenlog.0"
 				)).!
 
 				log.info("Waiting for the server..")
@@ -140,7 +151,7 @@ object DockerTasks {
 						"--log-driver", "json-file",
 						"--log-opt", "max-size=10m",
 						"--log-opt", "max-file=3",
-						"eclipse-temurin:21",
+						"eclipse-temurin:21-jdk",
 						"/bin/bash", "-c",
 						"mkdir -p /home/minecraft/server /home/minecraft/buildtools && " +
 							"chown -R root:root /home/minecraft && " +
@@ -203,6 +214,14 @@ object DockerTasks {
 								s"rm -rf $pluginsPath/*.jar"
 						)).!
 
+						log.info("Ensuring screen package is installed...")
+						Process(Seq(
+								"docker", "exec",
+								containerName,
+								"/bin/bash", "-c",
+								"apt-get update && apt-get install -y screen"
+						)).!
+
 						dockerEnsureContainer.value
 
 						val project = assemblyProject.value
@@ -222,20 +241,84 @@ object DockerTasks {
 
 				assemblyProject := sys.props.getOrElse("assemblyProject", "fatty"),
 
-				assemblyAndDeploy := {
+
+				buildAndDeploy := Def.taskDyn {
 						val project = assemblyProject.value
-						project match {
-								case "fatty" => (LocalProject("fatty") / assembly).value
-								case "slimmy" => (LocalProject("slimmy") / assembly).value
+						val assemblyTask = project match {
+								case "fatty" => Def.task {
+										(LocalProject("fatty") / assembly).value
+								}
+								case "slimmy" => Def.task {
+										(LocalProject("slimmy") / assembly).value
+								}
 								case other => sys.error(s"Invalid project: $other. Must be 'fatty' or 'slimmy'")
 						}
-						deployToDocker.value
+
+						Def.task {
+								val jarFile = assemblyTask.value
+								if (!jarFile.exists()) {
+										sys.error(s"Assembly failed: jar file not produced")
+								}
+								deployToDocker.value
+						}
+				}.value,
+
+				assemblyAndDeploy := {
+						buildAndDeploy.value
 
 						val containerName = dockerContainerName.value
 						val log = streams.value.log
 
 						if (!startAndWaitForServerInitialization(containerName, log)) {
 								sys.error("Server failed to initialize within the timeout period")
+						}
+				},
+
+				codeWatch := {
+						val log = streams.value.log
+						val containerName = dockerContainerName.value
+						log.info("Starting watch service...")
+						val watchService = FileSystems.getDefault.newWatchService()
+
+						def registerAll(start: java.nio.file.Path): Unit = {
+								import scala.jdk.CollectionConverters.*
+								Files.walk(start).iterator().asScala.filter(Files.isDirectory(_)).foreach { dir =>
+										dir.register(watchService, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY)
+								}
+						}
+
+						val srcPath = file("src").toPath
+						registerAll(srcPath)
+
+						while (true) {
+								val key = watchService.take()
+								key.pollEvents().asScala.toList
+								key.reset()
+								log.info("Change detected, waiting for debounce period...")
+								import java.util.concurrent.TimeUnit
+								var polled = watchService.poll(3000L, TimeUnit.MILLISECONDS)
+								while (polled != null) {
+										polled.pollEvents().asScala.toList
+										polled.reset()
+										polled = watchService.poll(3000L, TimeUnit.MILLISECONDS)
+								}
+								log.info("No further changes detected, rebuilding and deploying...")
+								buildAndDeploy.value //todo
+								val result = Process(s"docker container inspect -f '{{.State.Running}}' $containerName").!!.trim
+								if (result.toLowerCase.contains("true")) {
+										log.info("Server is running, reloading plugins...")
+										Process(Seq(
+												"docker", "exec",
+												containerName,
+												"/bin/bash", "-c",
+												"screen -S minecraft -X stuff \"reload\\015\""
+										)).!
+								} else {
+										log.info("Server is not running, starting server...")
+										if (!startAndWaitForServerInitialization(containerName, log)) {
+												sys.error("Server failed to initialize within the timeout period")
+										}
+								}
 						}
 				}
 		)
